@@ -1,0 +1,50 @@
+---
+import { storyblokEditable } from "@storyblok/astro";
+import { resolveLink } from "../../lib/links";
+import Button from "../Button.astro";
+
+interface Props {
+  blok: {
+    title?: string;
+    text?: string;
+    button_label?: string;
+    button_link?: any;
+  };
+}
+
+const { blok } = Astro.props;
+---
+
+<section class="newsletter-blok blok-section" {...storyblokEditable(blok)}>
+  <div class="newsletter-inner">
+    {blok.title && <h2 class="section-title">{blok.title}</h2>}
+    {blok.text && <p class="section-intro">{blok.text}</p>}
+    {blok.button_label && (
+      <div class="btn-row">
+        <Button href={resolveLink(blok.button_link)}>{blok.button_label}</Button>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .newsletter-inner {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding-block: 2.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .newsletter-inner .section-intro {
+    text-align: center;
+  }
+
+  .newsletter-inner .btn-row {
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+</style>

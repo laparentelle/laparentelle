@@ -1,0 +1,89 @@
+---
+import { storyblokEditable } from "@storyblok/astro";
+import { resolveLink, imgSrc, imgAlt } from "../../lib/links";
+
+interface Props {
+  blok: {
+    image?: string | { filename?: string; alt?: string };
+    title?: string;
+    author?: string;
+    excerpt?: string;
+    link?: any;
+  };
+}
+
+const { blok } = Astro.props;
+const src = imgSrc(blok.image);
+---
+
+<article class="article-card" {...storyblokEditable(blok)}>
+  {src && (
+    <img class="article-img" src={src} alt={imgAlt(blok.image, blok.title)} loading="lazy" />
+  )}
+  <div class="article-body">
+    {blok.title && <h3 class="article-title">{blok.title}</h3>}
+    {blok.author && <p class="article-author">par {blok.author}</p>}
+    {blok.excerpt && <p class="article-excerpt">{blok.excerpt}</p>}
+    {blok.link && (blok.link.cached_url || blok.link.url) && (
+      <a class="card-link" href={resolveLink(blok.link)}>Lire l'article →</a>
+    )}
+  </div>
+</article>
+
+<style>
+  .article-card {
+    border: 0;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .article-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-neu-lg);
+  }
+
+  .article-img {
+    width: 100%;
+    aspect-ratio: 8 / 5;
+    object-fit: cover;
+    display: block;
+  }
+
+  .article-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+  }
+
+  .article-title {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .article-author {
+    margin: 0;
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .article-excerpt {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+    flex: 1;
+  }
+
+  .card-link {
+    margin-top: 0.5rem;
+    text-decoration: none;
+    font-weight: bold;
+  }
+</style>

@@ -1,0 +1,18 @@
+---
+import StoryblokComponent from "@storyblok/astro/StoryblokComponent.astro";
+
+interface Props {
+  blok: {
+    body?: any[];
+  };
+}
+
+const { blok } = Astro.props;
+const body = blok?.body ?? [];
+---
+
+{
+  body.map((nestedBlok) => (
+    <StoryblokComponent blok={nestedBlok} />
+  ))
+}

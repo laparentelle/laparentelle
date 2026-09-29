@@ -1,0 +1,38 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import StoryblokComponent from "@storyblok/astro/StoryblokComponent.astro";
+import Person from "../components/storyblok/Person.astro";
+import ActivityPage from "../components/storyblok/ActivityPage.astro";
+import { getPageStory } from "../lib/storyblok";
+
+export const prerender = false;
+
+const slug = Astro.params.slug;
+if (!slug) return Astro.redirect("/");
+let story: any = null;
+try {
+  story = await getPageStory(slug);
+} catch {
+  story = null;
+}
+if (!story) return new Response(null, { status: 404 });
+
+const content = story.content;
+// A person can exist without a public page (page_enabled === false).
+if (content.component === "person" && content.page_enabled === false) {
+  return new Response(null, { status: 404 });
+}
+// Story tags (used for filtering) live on the story, not in content:
+// pass them explicitly to the person template.
+const title = content.seo_title ?? content.name ?? story.name;
+---
+
+<BaseLayout title={title} description={content.seo_description}>
+  {content.component === "person" ? (
+    <Person blok={content} tags={story.tag_list ?? []} />
+  ) : content.component === "activity_page" ? (
+    <ActivityPage blok={content} tags={story.tag_list ?? []} />
+  ) : (
+    <StoryblokComponent blok={content} />
+  )}
+</BaseLayout>

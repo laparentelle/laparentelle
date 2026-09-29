@@ -1,0 +1,58 @@
+---
+import { storyblokEditable } from "@storyblok/astro";
+
+interface Props {
+  blok: {
+    quote?: string;
+    author?: string;
+    rating?: string;
+  };
+}
+
+const { blok } = Astro.props;
+---
+
+<figure class="testimonial" {...storyblokEditable(blok)}>
+  {blok.quote && <blockquote class="quote">“{blok.quote}”</blockquote>}
+  <figcaption class="meta">
+    {blok.author && <strong>{blok.author}</strong>}
+    {blok.rating && <span class="rating">{blok.rating}</span>}
+  </figcaption>
+</figure>
+
+<style>
+  .testimonial {
+    margin: 0;
+    border: 0;
+    border-radius: var(--radius-card);
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .quote {
+    margin: 0;
+    font-style: italic;
+    flex: 1;
+  }
+
+  .meta {
+    display: flex;
+    gap: 0.75rem;
+    align-items: baseline;
+  }
+
+  .meta strong {
+    font-family: var(--font-hand);
+    font-weight: 400;
+    font-size: 1.4rem;
+  }
+
+  .rating {
+    color: var(--accent);
+    font-size: 0.9rem;
+  }
+</style>

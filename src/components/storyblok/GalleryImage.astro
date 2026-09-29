@@ -1,0 +1,41 @@
+---
+import { storyblokEditable } from "@storyblok/astro";
+import { imgSrc, imgAlt } from "../../lib/links";
+
+interface Props {
+  blok: {
+    image?: string | { filename?: string; alt?: string };
+    caption?: string;
+  };
+}
+
+const { blok } = Astro.props;
+const src = imgSrc(blok.image);
+---
+
+{src && (
+  <figure class="gallery-item frame-organic" {...storyblokEditable(blok)}>
+    <img src={src} alt={imgAlt(blok.image, blok.caption)} loading="lazy" />
+    {blok.caption && <figcaption>{blok.caption}</figcaption>}
+  </figure>
+)}
+
+<style>
+  .gallery-item {
+    margin: 0;
+  }
+
+  .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    aspect-ratio: 3 / 4;
+    display: block;
+  }
+
+  .gallery-item figcaption {
+    font-size: 0.85rem;
+    color: var(--muted);
+    padding-top: 0.4rem;
+  }
+</style>

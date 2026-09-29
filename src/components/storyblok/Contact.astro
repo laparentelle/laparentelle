@@ -1,0 +1,117 @@
+---
+import { storyblokEditable } from "@storyblok/astro";
+import ContactForm from "../ContactForm.astro";
+import { lines } from "../../lib/links";
+
+interface Props {
+  blok: {
+    eyebrow?: string;
+    title?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    hours?: string;
+    show_form?: boolean;
+    form_mode?: string;
+    recipient_email?: string;
+  };
+}
+
+const { blok } = Astro.props;
+const hours = lines(blok.hours);
+// Fixed mode (e.g. a person page with its own address): no dropdown.
+// General mode (default): dropdown with Administratif + equipe/.
+const fixedEmail =
+  blok.form_mode === "person" && blok.recipient_email
+    ? blok.recipient_email
+    : undefined;
+---
+
+<section class="contact-blok blok-section" id="contact" {...storyblokEditable(blok)}>
+  {blok.eyebrow && <p class="eyebrow">{blok.eyebrow}</p>}
+  {blok.title && <h2 class="section-title">{blok.title}</h2>}
+  <div class="contact-grid">
+    <address class="contact-info">
+      {blok.address && <p class="contact-address">{blok.address}</p>}
+      {blok.phone && (
+        <p>
+          <a href={`tel:${blok.phone.replace(/[\s.]/g, "")}`}>{blok.phone}</a>
+        </p>
+      )}
+      {blok.email && (
+        <p>
+          <a href={`mailto:${blok.email}`}>{blok.email}</a>
+        </p>
+      )}
+      {hours.length > 0 && (
+        <ul class="contact-hours">
+          {hours.map((h) => <li>{h}</li>)}
+        </ul>
+      )}
+    </address>
+    {blok.show_form && (
+      <div class="contact-form-wrap">
+        {fixedEmail ? (
+          <ContactForm fixedEmail={fixedEmail} />
+        ) : (
+          <ContactForm />
+        )}
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .contact-grid {
+    margin-top: 2rem;
+    display: grid;
+    gap: 2.5rem;
+  }
+
+  @media (min-width: 48rem) {
+    .contact-grid {
+      grid-template-columns: 0.9fr 1.1fr;
+    }
+  }
+
+  .contact-info {
+    font-style: normal;
+    display: grid;
+    gap: 0.75rem;
+    align-content: start;
+  }
+
+  .contact-info p {
+    margin: 0;
+  }
+
+  .contact-address {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+  }
+
+  .contact-info a {
+    color: var(--c-pine);
+    text-decoration: none;
+    border-bottom: 1px solid var(--c-line);
+  }
+
+  .contact-hours {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 1rem 1.25rem;
+    background: var(--c-sage-soft);
+    border: 1px solid var(--line);
+    border-radius: 0.9rem;
+    box-shadow: none;
+    display: grid;
+    gap: 0.3rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  .contact-form-wrap :global(.contact-form) {
+    margin-block: 0;
+    max-width: none;
+  }
+</style>

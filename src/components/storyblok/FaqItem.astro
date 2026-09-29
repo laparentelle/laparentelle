@@ -1,0 +1,72 @@
+---
+import { storyblokEditable, renderRichText } from "@storyblok/astro";
+
+interface Props {
+  blok: {
+    question?: string;
+    answer?: any;
+  };
+}
+
+const { blok } = Astro.props;
+const html = blok.answer ? renderRichText(blok.answer) : "";
+---
+
+<details class="faq-item" {...storyblokEditable(blok)}>
+  <summary class="faq-question">{blok.question}</summary>
+  {html && <div class="richtext faq-answer" set:html={html} />}
+</details>
+
+<style>
+  .faq-item {
+    border: 0;
+    border-radius: 0.9rem;
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu-sm);
+    padding: 0.25rem 1.25rem;
+  }
+
+  .faq-item[open] {
+    border-color: var(--c-pine-soft);
+  }
+
+  .faq-question {
+    cursor: pointer;
+    padding: 1rem 0;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .faq-question::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-question::after {
+    content: "+";
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid var(--c-pine);
+    border-radius: 50%;
+    color: var(--c-pine);
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
+    line-height: 1;
+    transition: transform 0.2s ease;
+  }
+
+  .faq-item[open] .faq-question::after {
+    transform: rotate(45deg);
+  }
+
+  .faq-answer {
+    padding-bottom: 1.25rem;
+    color: var(--muted);
+  }
+</style>

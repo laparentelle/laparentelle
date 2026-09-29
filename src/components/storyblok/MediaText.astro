@@ -1,0 +1,67 @@
+---
+import { storyblokEditable, renderRichText } from "@storyblok/astro";
+import { resolveLink, imgSrc, imgAlt } from "../../lib/links";
+import Button from "../Button.astro";
+
+interface Props {
+  blok: {
+    image?: string | { filename?: string; alt?: string };
+    eyebrow?: string;
+    title?: string;
+    text?: any;
+    cta_label?: string;
+    cta_link?: any;
+    reverse?: boolean;
+  };
+}
+
+const { blok } = Astro.props;
+const html = blok.text ? renderRichText(blok.text) : "";
+const src = imgSrc(blok.image);
+---
+
+<section class:list={["media-text-blok", "blok-section", { reverse: blok.reverse }]} {...storyblokEditable(blok)}>
+  {src && (
+    <figure class="media frame-organic">
+      <img src={src} alt={imgAlt(blok.image)} loading="lazy" />
+    </figure>
+  )}
+  <div class="copy">
+    {blok.eyebrow && <p class="eyebrow">{blok.eyebrow}</p>}
+    {blok.title && <h2 class="section-title">{blok.title}</h2>}
+    {html && <div class="richtext" set:html={html} />}
+    {blok.cta_label && (
+      <div class="btn-row">
+        <Button href={resolveLink(blok.cta_link)}>{blok.cta_label}</Button>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .media-text-blok {
+    display: grid;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  @media (min-width: 48rem) {
+    .media-text-blok {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .media-text-blok.reverse .media {
+      order: 2;
+    }
+  }
+
+  .media {
+    margin: 0;
+  }
+
+  .media img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+</style>

@@ -1,0 +1,168 @@
+@import "./design-system.css";
+
+/* ---- layout ---- */
+
+.header-inner,
+.footer-inner {
+  max-width: var(--max);
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+/* Sections constrain themselves; .hero-blok stays full-bleed. */
+main > :not(.hero-blok) {
+  max-width: var(--max);
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+/* ---- no-Storyblok fallback (index.astro) ---- */
+
+.hero {
+  padding-block: 4rem 3rem;
+}
+
+.hero p {
+  color: var(--c-ink-soft);
+  max-width: 38rem;
+}
+
+/* ---- header ---- */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--c-cream) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 0.9rem;
+}
+
+.site-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--c-pine-deep);
+}
+
+.site-title a {
+  text-decoration: none;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.site-nav a {
+  text-decoration: none;
+  color: var(--c-ink-soft);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.site-nav a:hover {
+  color: var(--c-pine);
+}
+
+/* ---- footer ---- */
+
+.site-footer {
+  margin-top: 2rem;
+  background: var(--c-pine-deep);
+  color: #e9e4d6;
+}
+
+.footer-inner {
+  padding-block: 2.5rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.footer-inner p {
+  margin: 0;
+}
+
+.footer-brand {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.footer-inner small {
+  color: #b9c4b6;
+}
+
+/* ---- contact form ---- */
+
+.contact-form {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 32rem;
+  margin-block: 2rem;
+}
+
+.contact-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-ink-soft);
+}
+
+.contact-form input,
+.contact-form textarea,
+.contact-form select {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--c-line);
+  border-radius: 0.75rem;
+  font: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  background: #fff;
+  color: var(--c-ink);
+}
+
+/* Custom chevron: replaces the UA arrow, which sits flush against the border */
+.contact-form select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.75rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5 6 6.5l5-5' stroke='%232e5249' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.15rem center;
+  background-size: 0.7rem;
+  cursor: pointer;
+}
+
+.contact-form select:focus-visible {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5 6 6.5l5-5' stroke='%232e5249' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus,
+.contact-form select:focus {
+  outline: 2px solid var(--c-pine);
+  outline-offset: 1px;
+  border-color: var(--c-pine);
+}
+
+.contact-form button {
+  justify-self: start;
+}
+
+.form-status {
+  min-height: 1.5em;
+  font-size: 0.9rem;
+  color: var(--c-ink-soft);
+}

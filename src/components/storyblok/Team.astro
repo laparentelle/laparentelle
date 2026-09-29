@@ -1,0 +1,178 @@
+---
+import { storyblokEditable, useStoryblokApi } from "@storyblok/astro";
+import { imgSrc, imgAlt } from "../../lib/links";
+
+interface Props {
+  blok: {
+    eyebrow?: string;
+    title?: string;
+    intro?: string;
+  };
+}
+
+const { blok } = Astro.props;
+
+const FILTERS = ["Maternité", "Féminité", "Parentalité", "Bouger son corps"];
+
+// Team listing is always dynamic: fetch person stories from the equipe/ folder.
+const api = useStoryblokApi();
+const version =
+  import.meta.env.DEV || import.meta.env.IS_PREVIEW === "true"
+    ? "draft"
+    : "published";
+const { data } = await api.get("cdn/stories", {
+  version,
+  starts_with: "equipe/",
+  per_page: 100,
+  excluding_fields: "bio,prestations,tarifs,availability,email,phone",
+});
+
+const members = ((data?.stories ?? []) as any[])
+  .filter(
+    (s) =>
+      s.content?.component === "person" &&
+      s.content?.visible_in_list !== false,
+  )
+  .map((s) => ({
+    name: s.content?.name ?? s.name,
+    role: s.content?.role ?? "",
+    photo: s.content?.photo ?? "",
+    tags: (s.tag_list ?? []) as string[],
+    url: `/${s.full_slug}`,
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+---
+
+<section class="team-blok blok-section" {...storyblokEditable(blok)}>
+  {blok.eyebrow && <p class="eyebrow">{blok.eyebrow}</p>}
+  {blok.title && <h2 class="section-title">{blok.title}</h2>}
+  {blok.intro && <p class="section-intro">{blok.intro}</p>}
+
+  <div class="filters" role="group" aria-label="Filtrer par pôle">
+    <button type="button" class="filter-btn is-active" data-filter="">Toutes</button>
+    {FILTERS.map((f) => (
+      <button type="button" class="filter-btn" data-filter={f.toLowerCase()}>{f}</button>
+    ))}
+  </div>
+
+  <div class="team-grid" data-team-grid>
+    {members.map((m) => (
+      <a class="member-card" href={m.url} data-tags={m.tags.map((t) => t.toLowerCase()).join("|")}>
+        {imgSrc(m.photo) && (
+          <img class="member-photo" src={imgSrc(m.photo)} alt={imgAlt(typeof m.photo === "string" ? null : m.photo, m.name)} loading="lazy" />
+        )}
+        <span class="member-body">
+          <strong class="member-name">{m.name}</strong>
+          {m.role && <span class="member-role">{m.role}</span>}
+          {m.tags.length > 0 && (
+            <span class="member-tags">{m.tags.join(" · ")}</span>
+          )}
+        </span>
+      </a>
+    ))}
+  </div>
+  {members.length === 0 && (
+    <p class="section-intro">L'équipe arrive bientôt.</p>
+  )}
+</section>
+
+<script>
+  const grid = document.querySelector("[data-team-grid]");
+  const buttons = [...document.querySelectorAll(".filter-btn")];
+  buttons.forEach((btn) => {
+    btn?.addEventListener("click", () => {
+      buttons.forEach((b) => b.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      const f = (btn as HTMLElement).dataset.filter ?? "";
+      grid?.querySelectorAll(".member-card").forEach((card) => {
+        const tags = ((card as HTMLElement).dataset.tags ?? "").split("|");
+        const show = !f || tags.includes(f);
+        (card as HTMLElement).style.display = show ? "" : "none";
+      });
+    });
+  });
+</script>
+
+<style>
+  .filters {
+    margin-top: 1.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .filter-btn {
+    font: inherit;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.55rem 1.15rem;
+    border-radius: var(--radius-pill);
+    border: 0;
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu-sm);
+    color: var(--c-pine);
+    cursor: pointer;
+  }
+
+  .filter-btn.is-active {
+    background: var(--c-cream);
+    box-shadow: var(--shadow-neu-inset);
+    color: var(--c-pine-deep);
+  }
+
+  .team-grid {
+    margin-top: 2rem;
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  }
+
+  .member-card {
+    border: 0;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu);
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .member-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-neu-lg);
+  }
+
+  .member-photo {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    display: block;
+  }
+
+  .member-body {
+    padding: 1.1rem 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .member-name {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+
+  .member-role {
+    color: var(--c-pine-soft);
+    font-size: 0.92rem;
+  }
+
+  .member-tags {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+  }
+</style>

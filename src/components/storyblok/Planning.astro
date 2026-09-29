@@ -1,0 +1,1034 @@
+---
+import { storyblokEditable } from "@storyblok/astro";
+import Button from "../Button.astro";
+import { parseSessionDate } from "../../lib/date";
+import {
+  countBookingsBulk,
+  isBookingsConfigured,
+} from "../../lib/bookings";
+
+interface Session {
+  _uid?: string;
+  title?: string;
+  type?: string;
+  start?: string;
+  duration?: string | number;
+  practitioner?: string;
+  capacity?: string;
+  location?: string;
+  note?: string;
+}
+
+interface Props {
+  blok: {
+    eyebrow?: string;
+    title?: string;
+    intro?: string;
+    sessions?: Session[];
+  };
+}
+
+const { blok } = Astro.props;
+const bookingsOn = isBookingsConfigured();
+const tz = "Europe/Paris";
+
+// Session taxonomy (values mirror the Storyblok `type` options)
+const TYPES = [
+  { value: "activite", label: "Activité", legend: "Activité collective" },
+  { value: "sport", label: "Sport", legend: "Sport & mouvement" },
+  { value: "bienetre", label: "Bien-être", legend: "Bien-être & soins" },
+  { value: "consultation", label: "Consultations", legend: "Consultation" },
+] as const;
+const typeOf = (v?: string) =>
+  TYPES.some((t) => t.value === v) ? (v as string) : "activite";
+
+const dayFmt = new Intl.DateTimeFormat("fr-FR", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  timeZone: tz,
+});
+const dayShortFmt = new Intl.DateTimeFormat("fr-FR", {
+  weekday: "short",
+  timeZone: tz,
+});
+const monthShortFmt = new Intl.DateTimeFormat("fr-FR", {
+  month: "short",
+  timeZone: tz,
+});
+const timeFmt = new Intl.DateTimeFormat("fr-FR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: tz,
+});
+
+// Bookable window: from now, for the next 30 days.
+const now = new Date();
+const horizon = new Date(now.getTime() + 30 * 864e5);
+
+/** `duration` is a plain count of minutes (Storyblok text field). */
+function toMinutes(value?: string | number): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : 60;
+}
+
+function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h && m) return `${h} h ${String(m).padStart(2, "0")}`;
+  if (h) return `${h} h`;
+  return `${m} min`;
+}
+
+const sessions = (blok.sessions ?? [])
+  .map((s) => {
+    const start = parseSessionDate(s.start);
+    if (!start) return null;
+    const minutes = toMinutes(s.duration);
+    return {
+      ...s,
+      date: start,
+      startMin: start.getHours() * 60 + start.getMinutes(),
+      endMin: start.getHours() * 60 + start.getMinutes() + minutes,
+      minutes,
+      time: timeFmt.format(start),
+      type: typeOf(s.type),
+      capacity: Number(s.capacity) || 0,
+    };
+  })
+  .filter((s): s is NonNullable<typeof s> => s !== null)
+  .filter((s) => s.date >= now && s.date <= horizon)
+  .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+// Live booking counts (one round-trip, keyed by the session blok _uid)
+let counts: Record<string, number> = {};
+if (bookingsOn && sessions.length) {
+  try {
+    counts = await countBookingsBulk(sessions.map((s) => s._uid as string));
+  } catch {
+    counts = {};
+  }
+}
+
+const remaining = (s: (typeof sessions)[number]) => {
+  if (!bookingsOn || !s._uid) return null;
+  const taken = counts[s._uid] ?? 0;
+  return s.capacity ? Math.max(0, s.capacity - taken) : null;
+};
+
+/** Grid slots are narrow: drop the redundant "Consultation — " prefix. */
+const compactTitle = (title?: string) =>
+  (title ?? "").replace(/^Consultation\s*[—–-]\s*/, "");
+
+// ---- 4-day pages (empty days stay visible as empty columns) ----
+const keyOf = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: tz });
+const atMidnight = (d: Date) => {
+  const c = new Date(d);
+  c.setHours(0, 0, 0, 0);
+  return c;
+};
+
+const pageStarts: Date[] = [];
+{
+  const first = atMidnight(now);
+  for (let off = 0; off < 30; off += 4) {
+    const s = new Date(first);
+    s.setDate(s.getDate() + off);
+    pageStarts.push(s);
+  }
+}
+
+/** Overlap lanes: sessions in the same cluster share the column width. */
+function layoutDay(items: typeof sessions) {
+  const sorted = [...items].sort((a, b) => a.startMin - b.startMin);
+  const placed = sorted.map((s) => ({ ...s, lane: 0, lanes: 1 }));
+  let cluster: typeof placed = [];
+  let clusterEnd = -1;
+  const flush = () => {
+    if (!cluster.length) return;
+    const lanes = Math.max(...cluster.map((s) => s.lane)) + 1;
+    cluster.forEach((s) => (s.lanes = lanes));
+    cluster = [];
+  };
+  for (const s of placed) {
+    if (cluster.length && s.startMin >= clusterEnd) flush();
+    const used = cluster.filter((c) => c.endMin > s.startMin).map((c) => c.lane);
+    let lane = 0;
+    while (used.includes(lane)) lane++;
+    s.lane = lane;
+    cluster.push(s);
+    clusterEnd = Math.max(clusterEnd, s.endMin);
+  }
+  flush();
+  return placed;
+}
+
+const pages = pageStarts
+  .map((start, pi) => {
+    const days = Array.from({ length: 4 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
+      const dayKey = keyOf(d);
+      const atNoon = new Date(d);
+      atNoon.setHours(12, 0, 0, 0);
+      return {
+        key: dayKey,
+        num: d.getDate(),
+        month: monthShortFmt.format(atNoon),
+        label: dayFmt.format(atNoon),
+        short: dayShortFmt.format(atNoon),
+        isToday: dayKey === keyOf(new Date()),
+        sessions: layoutDay(
+          sessions.filter((s) => keyOf(s.date) === dayKey),
+        ),
+      };
+    });
+    const first = days[0];
+    const last = days[days.length - 1];
+    return {
+      key: `p${pi}`,
+      range: `${first.num} ${first.month} – ${last.num} ${last.month}`,
+      days,
+      all: days.flatMap((d) => d.sessions),
+    };
+  })
+  .filter((p) => p.all.length > 0);
+
+// Time axis for the desktop grid
+const gridStart = Math.max(
+  0,
+  Math.floor(Math.min(...sessions.map((s) => s.startMin)) / 60) * 60,
+);
+const gridEnd = Math.ceil(Math.max(...sessions.map((s) => s.endMin)) / 60) * 60;
+const hours = Array.from(
+  { length: (gridEnd - gridStart) / 60 + 1 },
+  (_, i) => gridStart + i * 60,
+);
+
+// Opens the booking dialog for a session (shared by both views)
+const bookJs = (s: (typeof sessions)[number], label: string) =>
+  `(function(){const d=document.getElementById('book-dialog');if(!d)return;` +
+  `d.querySelector('[name=session_uid]').value='${s._uid}';` +
+  `d.querySelector('[name=session_title]').value=${JSON.stringify(s.title ?? "")};` +
+  `d.querySelector('[name=session_start]').value='${s.date.toISOString()}';` +
+  `d.querySelector('[name=session_capacity]').value='${s.capacity}';` +
+  `const t=d.querySelector('[data-book-when]');if(t)t.textContent=${JSON.stringify(label)};` +
+  `d.showModal();})()`;
+---
+
+<section class="planning-blok blok-section" {...storyblokEditable(blok)}>
+  {blok.eyebrow && <p class="eyebrow">{blok.eyebrow}</p>}
+  {blok.title && <h2 class="section-title">{blok.title}</h2>}
+  {blok.intro && <p class="section-intro">{blok.intro}</p>}
+
+  <div class="planning-toolbar">
+    <div class="filters" role="group" aria-label="Filtrer par type">
+      <button type="button" class="filter-btn is-active" data-type="">Tout</button>
+      {TYPES.map((t) => (
+        <button type="button" class="filter-btn" data-type={t.value}>{t.label}</button>
+      ))}
+    </div>
+    {pages.length > 1 && (
+      <div class="week-nav">
+        <button type="button" class="week-btn" data-page-nav="-1" aria-label="4 jours précédents">←</button>
+        <span class="week-range" data-page-range></span>
+        <button type="button" class="week-btn" data-page-nav="1" aria-label="4 jours suivants">→</button>
+      </div>
+    )}
+  </div>
+
+  <p class="legend">
+    {TYPES.map((t) => (
+      <span><i class={`legend-${t.value}`}></i> {t.legend}</span>
+    ))}
+  </p>
+
+  {pages.map((p, pi) => (
+    <div class="planning-week" data-page={p.key} data-page-label={p.range} hidden={pi > 0}>
+      <!-- Desktop: time-anchored planning grid (open days only) -->
+      <div
+        class="week-grid"
+        style={`grid-template-columns: 3.25rem repeat(${p.days.length}, minmax(0, 1fr))`}
+      >
+        <div class="week-corner"></div>
+        {p.days.map((d) => (
+          <div class:list={["week-day-head", { "is-today": d.isToday }]}>
+            <span class="week-day-name">{d.short}</span>
+            <span class="week-day-num">{d.num}</span>
+          </div>
+        ))}
+
+        <div class="week-gutter" style={`--grid-h:${hours.length * 4}rem`}>
+          {hours.map((h) => (
+            <span
+              class="week-hour"
+              style={`top:calc(${((h - gridStart) / 60) * 4}rem - 0.5em)`}
+            >
+              {String(Math.floor(h / 60)).padStart(2, "0")}h
+            </span>
+          ))}
+        </div>
+
+        {p.days.map((d) => (
+          <div
+            class:list={["week-col", { "is-today": d.isToday }]}
+            style={`--grid-h:${hours.length * 4}rem`}
+          >
+            {d.sessions.map((s) => {
+              const left = remaining(s);
+              const full = left === 0;
+              const top = ((s.startMin - gridStart) / 60) * 4;
+              const height = Math.max(2.4, (s.minutes / 60) * 4);
+              const width = 100 / s.lanes;
+              const showMeta = s.minutes >= 75;
+              const style = [
+                `--top:${top}rem`,
+                `--h:${height}rem`,
+                `--left:calc(${s.lane * width}% + 2px)`,
+                `--w:calc(${width}% - 4px)`,
+              ].join(";");
+              const body = bookingsOn && s._uid && !full;
+              const inner = (
+                <>
+                  <span class="slot-top">
+                    <span class="slot-time">{s.time}</span>
+                    {left !== null && (
+                      <span class:list={["slot-spots", { "is-full": full, "is-low": left <= 2 }]}>
+                        {full ? "Complet" : `${left} pl.`}
+                      </span>
+                    )}
+                  </span>
+                  <span class="slot-title">{compactTitle(s.title)}</span>
+                  {showMeta && s.practitioner && (
+                    <span class="slot-meta">{s.practitioner}</span>
+                  )}
+                </>
+              );
+              return body ? (
+                <button
+                  type="button"
+                  class:list={["slot", `slot--${s.type}`, { "is-full": full }]}
+                  style={style}
+                  data-type={s.type}
+                  title={`${s.time} · ${s.title}${s.practitioner ? ` — ${s.practitioner}` : ""}`}
+                  onclick={bookJs(s, `${d.label} à ${s.time}`)}
+                >
+                  {inner}
+                </button>
+              ) : (
+                <div
+                  class:list={["slot", `slot--${s.type}`, { "is-full": full }]}
+                  style={style}
+                  data-type={s.type}
+                >
+                  {inner}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      <!-- Mobile: day-grouped cards -->
+      <div class="week-agenda">
+        {p.days.map((d) => (
+            <div class="day">
+              <h3 class="day-label">{d.label}</h3>
+              {d.sessions.length === 0 ? (
+                <p class="day-empty">Aucun créneau ce jour.</p>
+              ) : (
+              <ul class="session-list">
+                {d.sessions.map((s) => {
+                  const left = remaining(s);
+                  const full = left === 0;
+                  return (
+                    <li class="session" data-type={s.type}>
+                      <div class="session-when">
+                        <span class="session-time">{s.time}</span>
+                        <span class="session-duration">{formatDuration(s.minutes)}</span>
+                      </div>
+                      <div class="session-body">
+                        <div class="session-head">
+                          <span class:list={["badge", `badge--${s.type}`]}>
+                            {TYPES.find((t) => t.value === s.type)?.label ?? s.type}
+                          </span>
+                          {left !== null && (
+                            <span class:list={["spots", { "is-full": full, "is-low": left <= 2 }]}>
+                              {full
+                                ? "Complet"
+                                : `${left} place${left > 1 ? "s" : ""} restante${left > 1 ? "s" : ""}`}
+                            </span>
+                          )}
+                        </div>
+                        <p class="session-title">{s.title}</p>
+                        {s.practitioner && <p class="session-meta">{s.practitioner}</p>}
+                        {s.note && <p class="session-note">{s.note}</p>}
+                        {bookingsOn && s._uid && !full && (
+                          <Button
+                            small
+                            variant="contrast"
+                            href="#"
+                            onclick={bookJs(s, `${d.label} à ${s.time}`)}
+                          >
+                            Réserver
+                          </Button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              )}
+            </div>
+          ))}
+        {p.all.length === 0 && <p class="section-intro">Aucun créneau sur ces 4 jours.</p>}
+      </div>
+    </div>
+  ))}
+
+  {sessions.length === 0 && (
+    <p class="section-intro">Le planning arrive bientôt.</p>
+  )}
+
+  {!bookingsOn && (
+    <p class="booking-note">
+      Réservation en ligne bientôt disponible. En attendant, appelez-nous au
+      <a href="tel:+33979209924"> 09 79 20 99 24</a> ou écrivez-nous via le
+      <a href="/contact">formulaire de contact</a>.
+    </p>
+  )}
+</section>
+
+<dialog id="book-dialog" class="book-dialog">
+  <form method="dialog" class="book-close-form">
+    <button class="book-close" value="close" aria-label="Fermer">×</button>
+  </form>
+  <h3 class="book-title">Réserver</h3>
+  <p class="book-when" data-book-when></p>
+  <form class="contact-form book-form" id="book-form">
+    <input type="hidden" name="session_uid" />
+    <input type="hidden" name="session_title" />
+    <input type="hidden" name="session_start" />
+    <input type="hidden" name="session_capacity" />
+    <label>
+      Nom
+      <input type="text" name="name" required autocomplete="family-name" />
+    </label>
+    <label>
+      Prénom
+      <input type="text" name="firstname" required autocomplete="given-name" />
+    </label>
+    <label>
+      Email
+      <input type="email" name="email" required autocomplete="email" />
+    </label>
+    <label>
+      Téléphone <span class="opt">(facultatif)</span>
+      <input type="tel" name="phone" autocomplete="tel" />
+    </label>
+    <label class="hp" aria-hidden="true">
+      Site web
+      <input type="text" name="website" tabindex="-1" autocomplete="off" />
+    </label>
+    <Button submit>Confirmer ma réservation</Button>
+    <p class="form-status" role="status" aria-live="polite"></p>
+  </form>
+</dialog>
+
+<script>
+  const weeks = [...document.querySelectorAll<HTMLElement>("[data-page]")];
+  const range = document.querySelector("[data-page-range]");
+
+  const showWeek = (i: number) => {
+    const idx = Math.min(weeks.length - 1, Math.max(0, i));
+    weeks.forEach((w, n) => (w.hidden = n !== idx));
+    if (range) range.textContent = weeks[idx]?.dataset.pageLabel ?? "";
+    document.querySelectorAll<HTMLElement>("[data-page-nav]").forEach((b) => {
+      const dir = Number(b.dataset.pageNav);
+      const target = idx + dir;
+      (b as HTMLButtonElement).disabled = target < 0 || target > weeks.length - 1;
+    });
+    relayoutVisibleWeek();
+  };
+  showWeek(0);
+
+  document.querySelectorAll<HTMLElement>("[data-page-nav]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const current = weeks.findIndex((w) => !w.hidden);
+      showWeek(current + Number(btn.dataset.pageNav));
+    });
+  });
+
+  // Type filter (applies to grid slots and agenda cards)
+  document.querySelectorAll<HTMLElement>("[data-type].filter-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      const type = btn.dataset.type ?? "";
+      document.querySelectorAll<HTMLElement>(".slot, .session").forEach((s) => {
+        s.hidden = Boolean(type) && s.dataset.type !== type;
+      });
+      document.querySelectorAll<HTMLElement>(".day").forEach((day) => {
+        day.hidden = day.querySelectorAll(".session:not([hidden])").length === 0;
+      });
+      relayoutVisibleWeek();
+    });
+  });
+
+  /**
+   * Recompute overlap lanes from the *visible* slots only, so a filtered
+   * session expands to the full column width instead of keeping the lane
+   * it had when every session was shown.
+   */
+  function relayoutVisibleWeek() {
+    document
+      .querySelectorAll<HTMLElement>(".planning-week:not([hidden]) .week-col")
+      .forEach((col) => {
+        const items = [...col.querySelectorAll<HTMLElement>(".slot:not([hidden])")]
+          .map((el) => {
+            const top = parseFloat(getComputedStyle(el).top);
+            const height = parseFloat(getComputedStyle(el).height);
+            return { el, top, bottom: top + height, lane: 0 };
+          })
+          .sort((a, b) => a.top - b.top);
+        if (!items.length) return;
+        let cluster: typeof items = [];
+        let clusterEnd = -1;
+        const flush = () => {
+          if (!cluster.length) return;
+          const n = Math.max(...cluster.map((s) => s.lane)) + 1;
+          cluster.forEach((s) => {
+            s.el.style.setProperty("--left", `calc(${(s.lane * 100) / n}% + 2px)`);
+            s.el.style.setProperty("--w", `calc(${100 / n}% - 4px)`);
+          });
+          cluster = [];
+        };
+        for (const it of items) {
+          if (cluster.length && it.top >= clusterEnd) flush();
+          const used = cluster.filter((c) => c.bottom > it.top).map((c) => c.lane);
+          let lane = 0;
+          while (used.includes(lane)) lane++;
+          it.lane = lane;
+          cluster.push(it);
+          clusterEnd = Math.max(clusterEnd, it.bottom);
+        }
+        flush();
+      });
+  }
+
+  // Booking submit
+  const form = document.getElementById("book-form") as HTMLFormElement | null;
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const status = form.querySelector(".form-status");
+    const data = Object.fromEntries(new FormData(form).entries());
+    if (status) status.textContent = "Envoi en cours…";
+    try {
+      const res = await fetch("/api/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Erreur");
+      if (status) status.textContent = "Réservation confirmée ! Vous recevez un e-mail de confirmation.";
+      form.reset();
+      setTimeout(() => document.getElementById("book-dialog")?.close(), 2500);
+    } catch (err) {
+      if (status)
+        status.textContent = err instanceof Error ? err.message : "Une erreur est survenue.";
+    }
+  });
+</script>
+
+<style>
+  [hidden] {
+    display: none !important;
+  }
+
+  .planning-toolbar {
+    margin-top: 1.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .filters,
+  .week-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .filter-btn,
+  .week-btn {
+    font: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.5rem 1.1rem;
+    border-radius: var(--radius-pill);
+    border: 0;
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu-sm);
+    color: var(--c-pine);
+    cursor: pointer;
+  }
+
+  .filter-btn.is-active {
+    background: var(--c-cream);
+    box-shadow: var(--shadow-neu-inset);
+    color: var(--c-pine-deep);
+  }
+
+  .week-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .week-range {
+    min-width: 11rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--c-pine-soft);
+    text-transform: capitalize;
+  }
+
+  .legend {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .legend i {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 0.2rem;
+    display: inline-block;
+  }
+
+  .legend-activite {
+    background: var(--c-gold-dark);
+  }
+
+  .legend-sport {
+    background: var(--c-marigold);
+  }
+
+  .legend-bienetre {
+    background: var(--c-pine);
+  }
+
+  .legend-consultation {
+    background: var(--c-pine-deep);
+  }
+
+  .badge--activite {
+    background: var(--c-gold-dark);
+    border-color: var(--c-gold-dark);
+    color: #fff;
+  }
+
+  .badge--sport {
+    background: var(--c-marigold);
+    border-color: var(--c-marigold);
+    color: var(--c-pine-deep);
+  }
+
+  .badge--bienetre {
+    background: var(--c-pine);
+    border-color: var(--c-pine);
+    color: #fff;
+  }
+
+  .badge--consultation {
+    background: var(--c-pine-deep);
+    border-color: var(--c-pine-deep);
+    color: #fff;
+  }
+
+  /* ---- desktop week grid ---- */
+  .week-grid {
+    display: none;
+  }
+
+  .week-agenda {
+    margin-top: 2rem;
+  }
+
+  @media (min-width: 64rem) {
+    .week-grid {
+      display: grid;
+      grid-template-columns: 3.25rem;
+      gap: 0.4rem;
+      margin-top: 2rem;
+    }
+
+    .week-agenda {
+      display: none;
+    }
+  }
+
+  .week-corner {
+    height: 0;
+  }
+
+  .week-day-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .week-day-name {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--c-pine-soft);
+  }
+
+  .week-day-num {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+
+  .week-day-head.is-today .week-day-num {
+    background: var(--c-pine);
+    color: #fff;
+    border-radius: 999px;
+    width: 2rem;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+    font-size: 1rem;
+  }
+
+  .week-gutter {
+    position: relative;
+    height: var(--grid-h);
+  }
+
+  .week-hour {
+    position: absolute;
+    right: 0.5rem;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .week-col {
+    position: relative;
+    height: var(--grid-h);
+    border-radius: 0.75rem;
+    background: var(--c-sage-soft);
+    /* hour lines every 4rem (= 1h) */
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--c-line) 0 1px,
+      transparent 1px 4rem
+    );
+  }
+
+  .week-col.is-today {
+    background-color: var(--c-sand);
+  }
+
+  .slot {
+    position: absolute;
+    top: var(--top);
+    left: var(--left);
+    width: var(--w);
+    height: var(--h);
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+    overflow: hidden;
+    text-align: left;
+    padding: 0.3rem 0.45rem;
+    border: 0;
+    border-left: 3px solid var(--c-gold-dark);
+    border-radius: 0.6rem;
+    background: #fff;
+    box-shadow: 0 0.4rem 0.9rem rgb(32 59 52 / 0.18);
+    font: inherit;
+    color: inherit;
+    cursor: default;
+  }
+
+  button.slot {
+    cursor: pointer;
+  }
+
+  button.slot:hover {
+    background: var(--c-marigold);
+    border-left-color: var(--c-marigold-deep);
+  }
+
+  .slot--sport {
+    border-left-color: var(--c-marigold);
+  }
+
+  .slot--bienetre {
+    border-left-color: var(--c-pine);
+    background: var(--c-sage-soft);
+  }
+
+  .slot--consultation {
+    border-left-color: var(--c-pine-deep);
+    background: #e7ecea;
+  }
+
+  .slot.is-full {
+    opacity: 0.62;
+  }
+
+  .slot-time {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--c-pine-soft);
+    white-space: nowrap;
+  }
+
+  .slot-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.35rem;
+  }
+
+  .slot-title {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    line-height: 1.12;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .slot-meta {
+    font-size: 0.68rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .slot-spots {
+    font-size: 0.68rem;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--c-pine-soft);
+  }
+
+  .slot-spots.is-low {
+    color: #b3761a;
+  }
+
+  .slot-spots.is-full {
+    color: var(--muted);
+  }
+
+  /* Short slots reveal everything on hover/focus instead of clipping */
+  @media (hover: hover) {
+    button.slot:hover,
+    button.slot:focus-visible {
+      height: auto;
+      min-height: var(--h);
+      z-index: 6;
+    }
+
+    button.slot:hover .slot-title,
+    button.slot:focus-visible .slot-title {
+      display: block;
+    }
+  }
+
+  /* ---- mobile agenda ---- */
+  .day {
+    margin-top: 2rem;
+  }
+
+  .day-label {
+    margin: 0 0 0.75rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-pine-soft);
+  }
+
+  .day-empty {
+    margin: 0 0 0.5rem;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  .session-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .session {
+    display: grid;
+    gap: 0.75rem 1.25rem;
+    grid-template-columns: 6.5rem 1fr;
+    padding: 1.1rem 1.25rem;
+    border-radius: var(--radius-card);
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu-sm);
+  }
+
+  @media (min-width: 40rem) {
+    .session {
+      grid-template-columns: 8rem 1fr;
+    }
+  }
+
+  .session-when {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .session-time {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    line-height: 1.1;
+  }
+
+  .session-duration {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .session-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.35rem;
+  }
+
+  .session-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+  }
+
+  .session-meta,
+  .session-note {
+    margin: 0.15rem 0 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  .session-note {
+    font-style: italic;
+  }
+
+  .spots {
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--c-pine-soft);
+  }
+
+  .spots.is-low {
+    color: #b3761a;
+  }
+
+  .spots.is-full {
+    color: var(--muted);
+  }
+
+  .session :global(.button-027) {
+    margin-top: 0.75rem;
+  }
+
+  .booking-note {
+    margin-top: 2rem;
+    color: var(--muted);
+  }
+
+  .booking-note a {
+    color: var(--c-pine);
+  }
+
+  /* ---- booking dialog ---- */
+  .book-dialog {
+    border: 0;
+    border-radius: var(--radius-card);
+    padding: 2rem;
+    max-width: 30rem;
+    width: calc(100% - 2rem);
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu-lg);
+  }
+
+  .book-dialog::backdrop {
+    background: rgb(32 59 52 / 0.45);
+  }
+
+  .book-close-form {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .book-close {
+    font: inherit;
+    font-size: 1.4rem;
+    line-height: 1;
+    width: 2rem;
+    height: 2rem;
+    border: 0;
+    border-radius: 50%;
+    background: var(--c-cream);
+    color: var(--c-pine);
+    cursor: pointer;
+  }
+
+  .book-title {
+    margin: 0 0 0.25rem;
+  }
+
+  .book-when {
+    margin: 0 0 1.25rem;
+    color: var(--c-pine-soft);
+  }
+
+  .book-form {
+    margin: 0;
+    max-width: none;
+  }
+
+  .opt {
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 0.8rem;
+  }
+
+  .hp {
+    position: absolute;
+    left: -9999px;
+  }
+</style>

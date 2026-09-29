@@ -1,0 +1,51 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ContactForm from "../components/ContactForm.astro";
+import StoryblokComponent from "@storyblok/astro/StoryblokComponent.astro";
+import { getPageStory } from "../lib/storyblok";
+
+let story: any = null;
+const hasToken =
+  !!import.meta.env.STORYBLOK_TOKEN &&
+  import.meta.env.STORYBLOK_TOKEN !== "placeholder-token";
+
+if (hasToken) {
+  try {
+    story = await getPageStory("home");
+  } catch {
+    story = null;
+  }
+}
+
+const content = story?.content;
+const seoTitle = content?.seo_title ?? undefined;
+const seoDescription = content?.seo_description ?? undefined;
+---
+
+<BaseLayout title={seoTitle} description={seoDescription}>
+  {
+    content ? (
+      <StoryblokComponent blok={content} />
+    ) : (
+      <>
+        <section class="hero" data-reveal>
+          <h1>La Parent'elle</h1>
+          <p>Un lieu pluridisciplinaire pour la femme et la famille.</p>
+          <p>
+            Contenu Storyblok à venir — créez une story <code>home</code> de type{" "}
+            <code>page</code> avec un champ <code>body</code> (blocks).
+          </p>
+        </section>
+        <section id="contact">
+          <h2>Contact</h2>
+          <ContactForm />
+        </section>
+      </>
+    )
+  }
+</BaseLayout>
+
+<script>
+  import { initReveals } from "../lib/animations";
+  initReveals();
+</script>

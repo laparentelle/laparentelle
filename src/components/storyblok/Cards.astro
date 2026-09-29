@@ -1,0 +1,35 @@
+---
+import { storyblokEditable } from "@storyblok/astro";
+import StoryblokComponent from "@storyblok/astro/StoryblokComponent.astro";
+
+interface Props {
+  blok: {
+    eyebrow?: string;
+    title?: string;
+    intro?: string;
+    items?: any[];
+  };
+}
+
+const { blok } = Astro.props;
+---
+
+<section class="cards-blok blok-section" {...storyblokEditable(blok)}>
+  {blok.eyebrow && <p class="eyebrow">{blok.eyebrow}</p>}
+  {blok.title && <h2 class="section-title">{blok.title}</h2>}
+  {blok.intro && <p class="section-intro">{blok.intro}</p>}
+  <div class="cards-grid">
+    {(blok.items ?? []).map((item) => (
+      <StoryblokComponent blok={item} />
+    ))}
+  </div>
+</section>
+
+<style>
+  .cards-grid {
+    margin-top: 2rem;
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  }
+</style>

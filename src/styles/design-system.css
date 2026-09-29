@@ -1,0 +1,465 @@
+/* ============================================================
+   La Parent'elle — design system
+   Inspired by lamaisongaia.fr (warm ivory base, serif display +
+   geometric sans, uppercase labels, generous spacing) with an
+   eucalyptus-green primary instead of terracotta.
+   ============================================================ */
+
+:root {
+  /* Brand */
+  --c-pine: #2e5249;
+  --c-pine-deep: #203b34;
+  --c-pine-soft: #5f7f73;
+  --c-sage: #dde7d4;
+  --c-sage-soft: #edf1e6;
+
+  /* Neutrals */
+  --c-cream: #faf6ee;
+  --c-sand: #f0e9dc;
+  --c-ink: #26332d;
+  --c-ink-soft: #5f6e65;
+  --c-line: #e3daca;
+
+  /* Kept from Gaia language */
+  --c-gold: #e5cc92;
+  --c-gold-dark: #c9a14a;
+
+  /* Contrast accent (Provençal marigold vs eucalyptus green) */
+  --c-marigold: #e9a13b;
+  --c-marigold-deep: #c9821f;
+
+  /* Legacy aliases (used by section components) */
+  --bg: var(--c-cream);
+  --ink: var(--c-ink);
+  --muted: var(--c-ink-soft);
+  --accent: var(--c-pine);
+  --line: var(--c-line);
+  --max: 72rem;
+
+  /* Typography */
+  --font-display: "Sentient", Georgia, serif;
+  --font-body: "Jost", "Avenir Next", system-ui, sans-serif;
+  --font-hand: "La Belle Aurore", cursive;
+
+  /* Shape */
+  --radius-card: 1.25rem;
+  --radius-pill: 999px;
+
+  /* Neumorphism: soft light + soft shadow on near-cream surfaces */
+  --neu-surface: #fffdf7;
+  --neu-light: rgb(255 255 255 / 0.95);
+  --neu-dark: rgb(93 84 63 / 0.16);
+  --shadow-neu: 10px 10px 24px var(--neu-dark), -10px -10px 24px var(--neu-light);
+  --shadow-neu-sm: 6px 6px 14px var(--neu-dark), -6px -6px 14px var(--neu-light);
+  --shadow-neu-lg: 18px 18px 40px var(--neu-dark), -18px -18px 40px var(--neu-light);
+  --shadow-neu-inset: inset 6px 6px 14px var(--neu-dark), inset -6px -6px 14px var(--neu-light);
+}
+
+/* Neumorphic surface helper */
+.neu {
+  background: var(--neu-surface);
+  border: 0;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-neu);
+}
+
+.neu-inset {
+  background: var(--c-cream);
+  border: 0;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-neu-inset);
+}
+
+/* Organic image frame: blob radius personalities (flat, no keyline).
+   Four personalities, distributed so neighbors never match. */
+.frame-organic {
+  --frame-radius: 24% 76% 62% 38% / 58% 30% 70% 42%;
+  position: relative;
+  isolation: isolate;
+  margin: 0;
+}
+
+.frame-organic img {
+  border-radius: var(--frame-radius);
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+}
+
+.frame-organic--b {
+  --frame-radius: 68% 32% 38% 62% / 52% 66% 34% 48%;
+}
+
+.frame-organic--c {
+  --frame-radius: 52% 48% 30% 70% / 68% 42% 58% 32%;
+}
+
+.frame-organic--d {
+  --frame-radius: 38% 62% 72% 28% / 30% 58% 42% 70%;
+}
+
+/* Reversed splits get the mirrored personality */
+.media-text-blok.reverse .frame-organic {
+  --frame-radius: 68% 32% 38% 62% / 52% 66% 34% 48%;
+}
+
+/* Galleries cycle through all four so neighbors always differ */
+.gallery-grid > :nth-child(4n + 2) {
+  --frame-radius: 68% 32% 38% 62% / 52% 66% 34% 48%;
+}
+
+.gallery-grid > :nth-child(4n + 3) {
+  --frame-radius: 52% 48% 30% 70% / 68% 42% 58% 32%;
+}
+
+.gallery-grid > :nth-child(4n + 4) {
+  --frame-radius: 38% 62% 72% 28% / 30% 58% 42% 70%;
+}
+
+/* ---- base ---- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--c-cream);
+  color: var(--c-ink);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+img {
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: var(--c-pine);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-pine);
+  outline-offset: 3px;
+}
+
+/* ---- section primitives ---- */
+
+.blok-section {
+  padding-block: clamp(3rem, 7vw, 5rem);
+}
+
+.eyebrow {
+  margin: 0 0 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-pine-soft);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 1.75rem;
+  height: 2px;
+  background: var(--c-gold-dark);
+  border-radius: 2px;
+}
+
+.section-title {
+  margin: 0 0 1rem;
+  font-size: clamp(1.7rem, 3.6vw, 2.6rem);
+}
+
+.section-intro {
+  color: var(--c-ink-soft);
+  max-width: 42rem;
+}
+
+.richtext > *:first-child {
+  margin-top: 0;
+}
+
+.richtext > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Handwritten accents (signatures, annotations — never body text) */
+.font-hand {
+  font-family: var(--font-hand);
+  font-weight: 400;
+  font-size: 1.3em;
+}
+
+/* ---- buttons (button-027) ---- */
+
+:root {
+  --button-027-color: #fff;
+  --button-027-color-background: var(--c-pine);
+  --button-027-border: 0;
+  --button-027-hover-color: var(--c-pine-deep);
+  --button-027-hover-color-background: var(--c-marigold);
+  --button-027-hover-border: 0;
+  --button-027-color-focus: var(--c-pine);
+  --button-027-padding: 0.85em 1.75em;
+  --button-027-border-radius: 2.5em;
+  --button-027-focus-inset: -0.125em;
+  --button-027-click-scale: 0.955 0.925;
+  --button-027-focus-scale: 1.15;
+  --button-027-ease-click: cubic-bezier(0.4, 0, 0.2, 1);
+  --button-027-ease-hover: linear(0, 0.5737 7.6%, 0.8382 11.87%, 0.9463 14.19%, 1.0292 16.54%, 1.0886 18.97%, 1.1258 21.53%, 1.137 22.97%, 1.1424 24.48%, 1.1423 26.1%, 1.1366 27.86%, 1.1165 31.01%, 1.0507 38.62%, 1.0219 42.57%, 0.9995 46.99%, 0.9872 51.63%, 0.9842 58.77%, 1.0011 81.26%, 1);
+  --button-027-ease-focus: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.button-027 {
+  -webkit-user-select: none;
+  user-select: none;
+  background-color: #0000;
+  outline-style: none;
+  padding: 0;
+  line-height: 1;
+  text-decoration: none;
+  display: inline-grid;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  transition: scale 0.15s var(--button-027-ease-click);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+button.button-027 {
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 0;
+}
+
+.button-027::after {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: var(--button-027-focus-inset);
+  border-radius: var(--button-027-border-radius);
+  transition: box-shadow 0.2s var(--button-027-ease-focus), scale 0.75s var(--button-027-ease-hover);
+  scale: var(--button-027-focus-scale);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.button-027:is(:focus-visible)::after {
+  box-shadow: 0 0 0 0.125em var(--button-027-color-focus);
+  scale: 1 1;
+}
+
+.button-027:active {
+  scale: var(--button-027-click-scale);
+}
+
+a.button-027:focus-visible,
+button.button-027:focus-visible {
+  outline: none;
+}
+
+.button-027__inner {
+  pointer-events: none;
+  perspective: 35em;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  grid-area: 1 / 1;
+  place-items: center;
+  display: grid;
+}
+
+.button-027__default {
+  width: 100%;
+  height: 100%;
+  color: var(--button-027-color);
+  grid-area: 1 / 1;
+  display: grid;
+  transition: translate 0.75s var(--button-027-ease-hover), rotate 0.85s var(--button-027-ease-hover), opacity 0.15s ease-out;
+}
+
+.button-027__default-bg {
+  background-color: var(--button-027-color-background);
+  border-radius: var(--button-027-border-radius);
+  border: var(--button-027-border);
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}
+
+.button-027__default-inner {
+  grid-column-gap: .125em;
+  grid-row-gap: .125em;
+  width: 100%;
+  height: 100%;
+  padding: var(--button-027-padding);
+  grid-area: 1 / 1;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.button-027__hover {
+  width: 100%;
+  height: 100%;
+  color: var(--button-027-hover-color);
+  grid-area: 1 / 1;
+  display: grid;
+  transition: translate 0.85s var(--button-027-ease-hover), rotate 0.75s var(--button-027-ease-hover), opacity 0.15s ease-out;
+  opacity: 0;
+  translate: 0 2em -8em;
+  rotate: 1 0 0 -90deg;
+}
+
+.button-027__hover-bg {
+  border-radius: var(--button-027-border-radius);
+  background-color: var(--button-027-hover-color-background);
+  border: var(--button-027-hover-border);
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}
+
+.button-027__hover-inner {
+  grid-column-gap: .125em;
+  grid-row-gap: .125em;
+  width: 100%;
+  height: 100%;
+  padding: var(--button-027-padding);
+  grid-area: 1 / 1;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.button-027__text {
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .button-027:is(:hover, :focus-visible) .button-027__default,
+  [data-hover]:is(:hover, :focus-visible) .button-027 .button-027__default {
+    translate: 0 -2em -8em;
+    rotate: 1 0 0 90deg;
+    opacity: 0;
+    transition-delay: 0.05s;
+  }
+
+  .button-027:is(:hover, :focus-visible) .button-027__hover,
+  [data-hover]:is(:hover, :focus-visible) .button-027 .button-027__hover {
+    transition: translate 0.75s 0.05s var(--button-027-ease-hover), rotate 0.85s 0.05s var(--button-027-ease-hover), opacity 0.075s 0.05s ease-in;
+    rotate: 1 0 0 0deg;
+    translate: 0 0 0;
+    opacity: 1;
+  }
+}
+
+/* Variants */
+
+.button-027--light {
+  --button-027-color: var(--c-pine-deep);
+  --button-027-color-background: #fff;
+  --button-027-hover-color: #fff;
+  --button-027-hover-color-background: var(--c-pine-deep);
+  --button-027-color-focus: #fff;
+}
+
+.button-027--outline-light {
+  --button-027-color: #fff;
+  --button-027-color-background: transparent;
+  --button-027-border: 1px solid #fff;
+  --button-027-hover-color: var(--c-pine-deep);
+  --button-027-hover-color-background: #fff;
+  --button-027-hover-border: 1px solid #fff;
+  --button-027-color-focus: #fff;
+}
+
+.button-027--ghost {
+  --button-027-color: var(--c-pine);
+  --button-027-color-background: transparent;
+  --button-027-border: 1px solid var(--c-pine);
+  --button-027-hover-color: #fff;
+  --button-027-hover-color-background: var(--c-pine);
+  --button-027-hover-border: 1px solid var(--c-pine);
+}
+
+.button-027--contrast {
+  --button-027-color: var(--c-pine-deep);
+  --button-027-color-background: var(--c-marigold);
+  --button-027-hover-color: #fff;
+  --button-027-hover-color-background: var(--c-pine-deep);
+}
+
+.button-027--small {
+  font-size: 0.72rem;
+}
+
+button.button-027--small {
+  font-size: 0.72rem;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+
+/* ---- badges / chips ---- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--c-sage-soft);
+  border: 1px solid var(--c-line);
+  color: var(--c-pine);
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.badge-gold {
+  background: var(--c-gold-dark);
+  border-color: var(--c-gold-dark);
+  color: #fff;
+}

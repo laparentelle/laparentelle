@@ -1,0 +1,191 @@
+---
+import { storyblokEditable, renderRichText } from "@storyblok/astro";
+import { imgSrc, imgAlt } from "../../lib/links";
+import { adminEmail } from "../../lib/contacts";
+import Button from "../Button.astro";
+import ContactForm from "../ContactForm.astro";
+
+interface Props {
+  blok: {
+    name?: string;
+    role?: string;
+    photo?: string | { filename?: string; alt?: string };
+    email?: string;
+    phone?: string;
+    booking_label?: string;
+    booking_link?: any;
+    availability?: string;
+    bio?: any;
+    prestations?: any;
+    tarifs?: any;
+  };
+  tags?: string[];
+}
+
+const { blok, tags = [] } = Astro.props;
+const bio = blok.bio ? renderRichText(blok.bio) : "";
+const prestations = blok.prestations ? renderRichText(blok.prestations) : "";
+const tarifs = blok.tarifs ? renderRichText(blok.tarifs) : "";
+const src = imgSrc(blok.photo);
+const bookingHref =
+  blok.booking_link?.cached_url || blok.booking_link?.url
+    ? (blok.booking_link.url ?? `/${blok.booking_link.cached_url}`)
+    : null;
+---
+
+<article class="person" {...storyblokEditable(blok)}>
+  <header class="person-head">
+    {src && (
+      <figure class="person-photo frame-organic">
+        <img src={src} alt={imgAlt(blok.photo, blok.name)} loading="eager" />
+      </figure>
+    )}
+    <div>
+      {blok.name && <h1 class="person-name">{blok.name}</h1>}
+      {blok.role && <p class="person-role">{blok.role}</p>}
+      {tags.length > 0 && (
+        <ul class="tags">
+          {tags.map((t) => <li class="badge">{t}</li>)}
+        </ul>
+      )}
+    </div>
+  </header>
+
+  {bio && (
+    <section class="person-block">
+      <h2>Présentation</h2>
+      <div class="richtext" set:html={bio} />
+    </section>
+  )}
+
+  {prestations && (
+    <section class="person-block">
+      <h2>Prestations</h2>
+      <div class="richtext" set:html={prestations} />
+    </section>
+  )}
+
+  {tarifs && (
+    <section class="person-block">
+      <h2>Tarifs</h2>
+      <div class="richtext" set:html={tarifs} />
+    </section>
+  )}
+
+  <aside class="person-contact">
+    <h2>Prendre rendez-vous</h2>
+    {blok.availability && <p class="muted">{blok.availability}</p>}
+    <div class="btn-row">
+      {blok.booking_label && bookingHref && (
+        <Button href={bookingHref}>{blok.booking_label}</Button>
+      )}
+      {blok.phone && (
+        <Button variant="ghost" href={`tel:${blok.phone.replace(/[\s.]/g, "")}`}>
+          {blok.phone}
+        </Button>
+      )}
+      {blok.email && (
+        <Button variant="ghost" href={`mailto:${blok.email}`}>
+          {blok.email}
+        </Button>
+      )}
+    </div>
+  </aside>
+
+  <section class="person-block">
+    <h2>Lui écrire un message</h2>
+    {blok.email ? (
+      <ContactForm fixedName={blok.name} fixedEmail={blok.email} />
+    ) : (
+      <ContactForm fixedName="l'administratif" fixedEmail={adminEmail()} forName={blok.name} />
+    )}
+  </section>
+
+  <p class="back">
+    <a href="/equipe">← Toute l'équipe</a>
+  </p>
+</article>
+
+<style>
+  .person {
+    padding-block: 3rem 4rem;
+    display: grid;
+    gap: 2.5rem;
+  }
+
+  .person-head {
+    display: grid;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  @media (min-width: 48rem) {
+    .person-head {
+      grid-template-columns: 16rem 1fr;
+      gap: 2.5rem;
+    }
+  }
+
+  .person-photo {
+    margin: 0;
+  }
+
+  .person-photo img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    display: block;
+  }
+
+  .person-name {
+    margin: 0 0 0.25rem;
+    font-size: clamp(2rem, 4.5vw, 3rem);
+  }
+
+  .person-role {
+    margin: 0 0 1rem;
+    color: var(--c-pine-soft);
+    font-size: 1.1rem;
+  }
+
+  .tags {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .person-block h2 {
+    font-size: 1.4rem;
+    margin: 0 0 0.75rem;
+  }
+
+  .person-block .richtext {
+    color: var(--muted);
+    max-width: 46rem;
+  }
+
+  .person-contact {
+    border: 0;
+    border-radius: var(--radius-card);
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu);
+    padding: 1.75rem;
+  }
+
+  .person-contact h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.4rem;
+  }
+
+  .muted {
+    color: var(--muted);
+  }
+
+  .back a {
+    color: var(--c-pine);
+    text-decoration: none;
+  }
+</style>

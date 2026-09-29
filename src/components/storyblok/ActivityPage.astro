@@ -1,0 +1,188 @@
+---
+import { storyblokEditable, renderRichText } from "@storyblok/astro";
+import { imgSrc, imgAlt } from "../../lib/links";
+import Button from "../Button.astro";
+
+interface Props {
+  blok: {
+    title?: string;
+    image?: string | { filename?: string; alt?: string };
+    animator?: string;
+    schedule?: string;
+    price?: string;
+    email?: string;
+    phone?: string;
+    booking_label?: string;
+    booking_link?: any;
+    description?: any;
+  };
+  tags?: string[];
+}
+
+const { blok, tags = [] } = Astro.props;
+const description = blok.description ? renderRichText(blok.description) : "";
+const src = imgSrc(blok.image);
+const bookingHref =
+  blok.booking_link?.cached_url || blok.booking_link?.url
+    ? (blok.booking_link.url ?? `/${blok.booking_link.cached_url}`)
+    : null;
+---
+
+<article class="activity-page" {...storyblokEditable(blok)}>
+  <header class="activity-head">
+    <div>
+      {blok.title && <h1 class="activity-title">{blok.title}</h1>}
+      {blok.animator && <p class="activity-animator">Avec {blok.animator}</p>}
+      {tags.length > 0 && (
+        <ul class="tags">
+          {tags.map((t) => <li class="badge">{t}</li>)}
+        </ul>
+      )}
+    </div>
+    {src && (
+      <figure class="activity-photo">
+        <img src={src} alt={imgAlt(blok.photo, blok.title)} loading="eager" />
+      </figure>
+    )}
+  </header>
+
+  {description && (
+    <section class="activity-block">
+      <div class="richtext" set:html={description} />
+    </section>
+  )}
+
+  {(blok.schedule || blok.price) && (
+    <section class="activity-block info-card">
+      <h2>Jours & tarifs</h2>
+      {blok.schedule && <p class="pre">{blok.schedule}</p>}
+      {blok.price && <p class="pre">{blok.price}</p>}
+    </section>
+  )}
+
+  <aside class="activity-contact">
+    <h2>Participer</h2>
+    <div class="btn-row">
+      {blok.booking_label && bookingHref && (
+        <Button href={bookingHref}>{blok.booking_label}</Button>
+      )}
+      {blok.phone && (
+        <Button variant="ghost" href={`tel:${blok.phone.replace(/[\s.]/g, "")}`}>
+          {blok.phone}
+        </Button>
+      )}
+      {blok.email && (
+        <Button variant="ghost" href={`mailto:${blok.email}`}>
+          {blok.email}
+        </Button>
+      )}
+      {(!bookingHref || !blok.booking_label) && (
+        <Button variant="ghost" href="/contact">Nous contacter</Button>
+      )}
+    </div>
+  </aside>
+
+  <p class="back">
+    <a href="/activites">← Toutes les activités</a>
+  </p>
+</article>
+
+<style>
+  .activity-page {
+    padding-block: 3rem 4rem;
+    display: grid;
+    gap: 2.5rem;
+  }
+
+  .activity-head {
+    display: grid;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  @media (min-width: 48rem) {
+    .activity-head {
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 2.5rem;
+    }
+  }
+
+  .activity-title {
+    margin: 0 0 0.25rem;
+    font-size: clamp(2rem, 4.5vw, 3rem);
+  }
+
+  .activity-animator {
+    margin: 0 0 1rem;
+    color: var(--c-pine-soft);
+    font-size: 1.1rem;
+  }
+
+  .tags {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .activity-photo {
+    margin: 0;
+  }
+
+  .activity-photo img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: var(--radius-card);
+    display: block;
+  }
+
+  .activity-block .richtext {
+    color: var(--muted);
+    max-width: 46rem;
+  }
+
+  .activity-block h2 {
+    font-size: 1.4rem;
+    margin: 0 0 0.75rem;
+  }
+
+  .info-card {
+    border: 0;
+    border-radius: var(--radius-card);
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu);
+    padding: 1.75rem;
+    max-width: 46rem;
+  }
+
+  .pre {
+    white-space: pre-line;
+    margin: 0 0 0.75rem;
+    color: var(--muted);
+  }
+
+  .pre:last-child {
+    margin-bottom: 0;
+  }
+
+  .activity-contact {
+    border: 0;
+    border-radius: var(--radius-card);
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu);
+    padding: 1.75rem;
+  }
+
+  .activity-contact h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.4rem;
+  }
+
+  .back a {
+    color: var(--c-pine);
+    text-decoration: none;
+  }
+</style>

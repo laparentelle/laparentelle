@@ -1,0 +1,74 @@
+---
+import Button from "./Button.astro";
+import { getContactRecipients } from "../lib/contacts";
+
+interface Props {
+  fixedName?: string;
+  fixedEmail?: string;
+  forName?: string;
+}
+
+const { fixedName, fixedEmail, forName } = Astro.props;
+// Fixed mode (person pages): no dropdown, message goes to one address.
+// General mode: dropdown built live from equipe/ (+ Administratif first).
+const recipients = fixedEmail ? [] : await getContactRecipients();
+---
+
+<form class="contact-form" id="contact-form" method="post" action="/api/contact">
+  <label>
+    Nom
+    <input type="text" name="name" required autocomplete="family-name" />
+  </label>
+  <label>
+    Prénom
+    <input type="text" name="firstname" required autocomplete="given-name" />
+  </label>
+  <label>
+    Email
+    <input type="email" name="email" required autocomplete="email" />
+  </label>
+  {fixedEmail ? (
+    <input type="hidden" name="recipient" value={fixedEmail} />
+  ) : (
+    <label>
+      Destinataire
+      <select name="recipient" required>
+        {recipients.map((r) => (
+          <option value={r.email}>{r.name}</option>
+        ))}
+      </select>
+    </label>
+  )}
+  {forName && <input type="hidden" name="for_name" value={forName} />}
+  <label>
+    Message
+    <textarea name="message" rows="5" required></textarea>
+  </label>
+  <Button submit>Envoyer</Button>
+  {fixedName && <p class="form-note">Ce message sera envoyé à {fixedName}.</p>}
+  <p class="form-status" role="status" aria-live="polite"></p>
+</form>
+
+<script>
+  const form = document.querySelector("#contact-form");
+  const status = form?.querySelector(".form-status");
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!(form instanceof HTMLFormElement)) return;
+    if (status) status.textContent = "Envoi en cours…";
+    try {
+      const data = Object.fromEntries(new FormData(form).entries());
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Request failed");
+      if (status) status.textContent = "Merci, votre message a bien été envoyé.";
+      form.reset();
+    } catch {
+      if (status) status.textContent = "Une erreur est survenue. Réessayez plus tard.";
+    }
+  });
+</script>

@@ -1,0 +1,173 @@
+---
+import { storyblokEditable, useStoryblokApi } from "@storyblok/astro";
+import { imgSrc, imgAlt } from "../../lib/links";
+
+interface Props {
+  blok: {
+    eyebrow?: string;
+    title?: string;
+    intro?: string;
+  };
+}
+
+const { blok } = Astro.props;
+
+const FILTERS = ["Sport", "Atelier"];
+
+const api = useStoryblokApi();
+const version =
+  import.meta.env.DEV || import.meta.env.IS_PREVIEW === "true"
+    ? "draft"
+    : "published";
+const { data } = await api.get("cdn/stories", {
+  version,
+  starts_with: "activites/",
+  per_page: 100,
+  excluding_fields: "description,schedule,price,email,phone",
+});
+
+const items = ((data?.stories ?? []) as any[])
+  .filter((s) => s.content?.component === "activity_page")
+  .map((s) => ({
+    title: s.content?.title ?? s.name,
+    animator: s.content?.animator ?? "",
+    photo: s.content?.photo ?? "",
+    tags: (s.tag_list ?? []) as string[],
+    url: `/${s.full_slug}`,
+  }))
+  .sort((a, b) => a.title.localeCompare(b.title, "fr"));
+---
+
+<section class="catalog-blok blok-section" {...storyblokEditable(blok)}>
+  {blok.eyebrow && <p class="eyebrow">{blok.eyebrow}</p>}
+  {blok.title && <h2 class="section-title">{blok.title}</h2>}
+  {blok.intro && <p class="section-intro">{blok.intro}</p>}
+
+  <div class="filters" role="group" aria-label="Filtrer par type">
+    <button type="button" class="filter-btn is-active" data-filter="">Toutes</button>
+    {FILTERS.map((f) => (
+      <button type="button" class="filter-btn" data-filter={f.toLowerCase()}>{f === "Atelier" ? "Ateliers" : f}</button>
+    ))}
+  </div>
+
+  <div class="catalog-grid" data-catalog-grid>
+    {items.map((it) => (
+      <a class="catalog-card" href={it.url} data-tags={it.tags.map((t) => t.toLowerCase()).join("|")}>
+        {imgSrc(it.photo) && (
+          <img class="catalog-photo" src={imgSrc(it.photo)} alt={imgAlt(typeof it.photo === "string" ? null : it.photo, it.title)} loading="lazy" />
+        )}
+        <span class="catalog-body">
+          <strong class="catalog-title">{it.title}</strong>
+          {it.animator && <span class="catalog-animator">{it.animator}</span>}
+          {it.tags.length > 0 && (
+            <span class="catalog-tags">{it.tags.join(" · ")}</span>
+          )}
+        </span>
+      </a>
+    ))}
+  </div>
+  {items.length === 0 && (
+    <p class="section-intro">Le programme arrive bientôt.</p>
+  )}
+</section>
+
+<script>
+  const grid = document.querySelector("[data-catalog-grid]");
+  const buttons = [...document.querySelectorAll(".filter-btn")];
+  buttons.forEach((btn) => {
+    btn?.addEventListener("click", () => {
+      buttons.forEach((b) => b.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      const f = (btn as HTMLElement).dataset.filter ?? "";
+      grid?.querySelectorAll(".catalog-card").forEach((card) => {
+        const tags = ((card as HTMLElement).dataset.tags ?? "").split("|");
+        const show = !f || tags.some((t) => t === f || t.startsWith(f));
+        (card as HTMLElement).style.display = show ? "" : "none";
+      });
+    });
+  });
+</script>
+
+<style>
+  .filters {
+    margin-top: 1.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .filter-btn {
+    font: inherit;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.55rem 1.15rem;
+    border-radius: var(--radius-pill);
+    border: 0;
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu-sm);
+    color: var(--c-pine);
+    cursor: pointer;
+  }
+
+  .filter-btn.is-active {
+    background: var(--c-cream);
+    box-shadow: var(--shadow-neu-inset);
+    color: var(--c-pine-deep);
+  }
+
+  .catalog-grid {
+    margin-top: 2rem;
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  }
+
+  .catalog-card {
+    border: 0;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu);
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .catalog-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-neu-lg);
+  }
+
+  .catalog-photo {
+    width: 100%;
+    aspect-ratio: 8 / 5;
+    object-fit: cover;
+    display: block;
+  }
+
+  .catalog-body {
+    padding: 1.1rem 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .catalog-title {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+
+  .catalog-animator {
+    color: var(--c-pine-soft);
+    font-size: 0.92rem;
+  }
+
+  .catalog-tags {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+  }
+</style>

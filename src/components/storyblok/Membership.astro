@@ -1,0 +1,112 @@
+---
+import { storyblokEditable, renderRichText } from "@storyblok/astro";
+import { resolveLink, lines } from "../../lib/links";
+import Button from "../Button.astro";
+
+interface Props {
+  blok: {
+    eyebrow?: string;
+    title?: string;
+    text?: any;
+    benefits?: string;
+    card_title?: string;
+    price?: string;
+    price_suffix?: string;
+    card_text?: string;
+    cta_label?: string;
+    cta_link?: any;
+    note?: string;
+  };
+}
+
+const { blok } = Astro.props;
+const html = blok.text ? renderRichText(blok.text) : "";
+const benefits = lines(blok.benefits);
+---
+
+<section class="membership-blok blok-section" {...storyblokEditable(blok)}>
+  <div class="membership-grid">
+    <div>
+      {blok.eyebrow && <p class="eyebrow">{blok.eyebrow}</p>}
+      {blok.title && <h2 class="section-title">{blok.title}</h2>}
+      {html && <div class="richtext" set:html={html} />}
+      {benefits.length > 0 && (
+        <ul class="benefits">
+          {benefits.map((b) => <li>{b}</li>)}
+        </ul>
+      )}
+    </div>
+    <aside class="price-card">
+      {blok.card_title && <h3 class="price-title">{blok.card_title}</h3>}
+      {blok.price && (
+        <p class="price">
+          {blok.price}
+          {blok.price_suffix && <span class="price-suffix">{blok.price_suffix}</span>}
+        </p>
+      )}
+      {blok.card_text && <p class="price-text">{blok.card_text}</p>}
+      {blok.cta_label && (
+        <Button href={resolveLink(blok.cta_link)}>{blok.cta_label}</Button>
+      )}
+      {blok.note && <p class="price-note">{blok.note}</p>}
+    </aside>
+  </div>
+</section>
+
+<style>
+  .membership-grid {
+    display: grid;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  @media (min-width: 48rem) {
+    .membership-grid {
+      grid-template-columns: 1.2fr 0.8fr;
+    }
+  }
+
+  .benefits {
+    padding-left: 1.25rem;
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .price-card {
+    border: 0;
+    border-radius: var(--radius-card);
+    background: var(--neu-surface);
+    box-shadow: var(--shadow-neu-lg);
+    padding: 1.75rem;
+    display: grid;
+    gap: 0.75rem;
+    justify-items: start;
+  }
+
+  .price-title {
+    margin: 0;
+  }
+
+  .price {
+    margin: 0;
+    font-size: 2.5rem;
+    line-height: 1;
+    color: var(--c-pine);
+  }
+
+  .price-suffix {
+    font-size: 1rem;
+    color: var(--muted);
+  }
+
+  .price-text {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .price-note {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+</style>

@@ -1,0 +1,116 @@
+---
+import { storyblokEditable } from "@storyblok/astro";
+import StoryblokComponent from "@storyblok/astro/StoryblokComponent.astro";
+import { resolveLink } from "../../lib/links";
+import Button from "../Button.astro";
+
+interface Props {
+  blok: {
+    title?: string;
+    review_label?: string;
+    review_link?: any;
+    items?: any[];
+  };
+}
+
+const { blok } = Astro.props;
+const items = blok.items ?? [];
+const solo = items.length === 1 ? items[0] : null;
+---
+
+<section class="testimonials-blok blok-section" {...storyblokEditable(blok)}>
+  {blok.title && <h2 class="section-title">{blok.title}</h2>}
+  {solo ? (
+    <figure class="spotlight-quote" {...storyblokEditable(solo)}>
+      <blockquote>{solo.quote}</blockquote>
+      <figcaption>
+        {solo.author && <strong>{solo.author}</strong>}
+        {solo.rating && <span>{solo.rating}</span>}
+      </figcaption>
+    </figure>
+  ) : (
+    <div class="testimonials-grid">
+      {items.map((item) => (
+        <StoryblokComponent blok={item} />
+      ))}
+    </div>
+  )}
+  {blok.review_label && (
+    <div class="btn-row btn-row-center">
+      <Button variant="ghost" href={resolveLink(blok.review_link)}>{blok.review_label}</Button>
+    </div>
+  )}
+</section>
+
+<style>
+  .testimonials-grid {
+    margin-top: 2rem;
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  }
+
+  .btn-row-center {
+    justify-content: center;
+  }
+
+  .spotlight-quote {
+    position: relative;
+    margin: 2.5rem auto 0;
+    max-width: 48rem;
+    padding: clamp(2.5rem, 6vw, 4rem) clamp(1.5rem, 5vw, 3rem);
+    text-align: center;
+    overflow: clip;
+  }
+
+  .spotlight-quote::before {
+    content: "\201C";
+    position: absolute;
+    top: -0.15em;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-display);
+    font-size: clamp(9rem, 22vw, 15rem);
+    line-height: 1;
+    color: var(--c-pine);
+    opacity: 0.16;
+    pointer-events: none;
+  }
+
+  .spotlight-quote blockquote {
+    position: relative;
+    margin: 0 0 1.5rem;
+    font-family: var(--font-hand);
+    font-weight: 600;
+    font-size: clamp(1.7rem, 3.6vw, 2.5rem);
+    line-height: 1.15;
+    text-wrap: pretty;
+  }
+
+  .spotlight-quote figcaption {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .spotlight-quote figcaption strong {
+    font-family: var(--font-hand);
+    font-weight: 400;
+    font-size: 1.6rem;
+  }
+
+  .spotlight-quote figcaption::before {
+    content: "";
+    width: 2.5rem;
+    height: 2px;
+    background: var(--c-gold-dark);
+    border-radius: 2px;
+  }
+
+  .spotlight-quote figcaption span {
+    color: var(--c-pine-soft);
+    font-style: italic;
+  }
+</style>

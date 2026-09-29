@@ -1,0 +1,25 @@
+{
+  "name": "laparentelle",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "build:preview": "IS_PREVIEW=true astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/vercel": "^11.0.11",
+    "@storyblok/astro": "^10.3.2",
+    "astro": "^7.3.4",
+    "gsap": "^3.13.0",
+    "resend": "^6.28.1"
+  },
+  "allowScripts": {
+    "esbuild": true
+  }
+}

@@ -1,0 +1,62 @@
+---
+interface Props {
+  href?: string;
+  variant?: "primary" | "light" | "outline-light" | "ghost" | "contrast";
+  small?: boolean;
+  submit?: boolean;
+}
+
+const {
+  href = "#",
+  variant = "primary",
+  small = false,
+  submit = false,
+} = Astro.props;
+
+// Rendered on both faces of the flip; render once, inject twice.
+const label = (await Astro.slots.render("default")).trim();
+
+const cls = [
+  "button-027",
+  variant !== "primary" ? `button-027--${variant}` : null,
+  small ? "button-027--small" : null,
+]
+  .filter(Boolean)
+  .join(" ");
+---
+
+{submit ? (
+  <button type="submit" data-button-027="" class={cls}>
+    <span class="button-027__inner">
+      <span class="button-027__default">
+        <span class="button-027__default-bg"></span>
+        <span class="button-027__default-inner">
+          <span class="button-027__text" set:html={label} />
+        </span>
+      </span>
+      <span aria-hidden="true" class="button-027__hover">
+        <span class="button-027__hover-bg"></span>
+        <span class="button-027__hover-inner">
+          <span class="button-027__text" set:html={label} />
+        </span>
+      </span>
+    </span>
+  </button>
+) : (
+  <a data-button-027="" href={href} class={cls}>
+    <span class="button-027__inner">
+      <span class="button-027__default">
+        <span class="button-027__default-bg"></span>
+        <span class="button-027__default-inner">
+          <span class="button-027__text" set:html={label} />
+        </span>
+      </span>
+      <span aria-hidden="true" class="button-027__hover">
+        <span class="button-027__hover-bg"></span>
+        <span class="button-027__hover-inner">
+          <span class="button-027__text" set:html={label} />
+        </span>
+      </span>
+    </span>
+  </a>
+)}

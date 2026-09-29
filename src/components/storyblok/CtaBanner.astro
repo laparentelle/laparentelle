@@ -1,0 +1,95 @@
+---
+import { storyblokEditable, renderRichText } from "@storyblok/astro";
+import { resolveLink, lines } from "../../lib/links";
+import Button from "../Button.astro";
+
+interface Props {
+  blok: {
+    title?: string;
+    text?: any;
+    topics?: string;
+    primary_label?: string;
+    primary_link?: any;
+    secondary_label?: string;
+    secondary_link?: any;
+    note?: string;
+  };
+}
+
+const { blok } = Astro.props;
+const html = blok.text ? renderRichText(blok.text) : "";
+const topics = lines(blok.topics);
+---
+
+<section class="cta-blok blok-section" {...storyblokEditable(blok)}>
+  <div class="cta-inner">
+    {blok.title && <h2 class="section-title">{blok.title}</h2>}
+    {html && <div class="richtext" set:html={html} />}
+    {topics.length > 0 && (
+      <ul class="chips">
+        {topics.map((t) => <li>{t}</li>)}
+      </ul>
+    )}
+    <div class="btn-row">
+      {blok.primary_label && (
+        <Button variant="light" href={resolveLink(blok.primary_link)}>{blok.primary_label}</Button>
+      )}
+      {blok.secondary_label && (
+        <Button variant="outline-light" href={resolveLink(blok.secondary_link)}>{blok.secondary_label}</Button>
+      )}
+    </div>
+    {blok.note && <p class="cta-note">{blok.note}</p>}
+  </div>
+</section>
+
+<style>
+  .cta-inner {
+    border-radius: var(--radius-card);
+    background: linear-gradient(135deg, var(--c-pine-deep), var(--c-pine));
+    box-shadow: 18px 18px 44px rgb(32 59 52 / 0.35), -12px -12px 32px rgb(255 255 255 / 0.7);
+    color: #fff;
+    padding: clamp(2rem, 5vw, 3.5rem);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .cta-inner .section-title {
+    margin: 0;
+  }
+
+  .cta-inner .richtext {
+    color: #d8cfc2;
+    max-width: 44rem;
+  }
+
+  .cta-inner .btn-row {
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+
+  .chips {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .chips li {
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+    padding: 0.3rem 0.9rem;
+    font-size: 0.85rem;
+  }
+
+  .cta-note {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #b8ad9e;
+  }
+</style>

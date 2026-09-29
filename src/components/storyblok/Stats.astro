@@ -1,0 +1,34 @@
+---
+import { storyblokEditable } from "@storyblok/astro";
+import StoryblokComponent from "@storyblok/astro/StoryblokComponent.astro";
+
+interface Props {
+  blok: {
+    items?: any[];
+  };
+}
+
+const { blok } = Astro.props;
+---
+
+<section class="stats-blok blok-section" {...storyblokEditable(blok)}>
+  <dl class="stats-grid">
+    {(blok.items ?? []).map((item) => (
+      <StoryblokComponent blok={item} />
+    ))}
+  </dl>
+</section>
+
+<style>
+  .stats-blok {
+    padding-block: 2rem;
+    border-block: 1px solid var(--line);
+  }
+
+  .stats-grid {
+    margin: 0;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  }
+</style>
