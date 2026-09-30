@@ -45,7 +45,6 @@ export interface CancellationSession {
   start?: string;
   duration?: number;
   capacity?: number;
-  location?: string;
   note?: string;
   practitioner?: string;
   profileUrl?: string;
@@ -197,7 +196,6 @@ async function buildCancellationSession(
     start: snapshot?.start ?? live?.start,
     duration: snapshot?.duration ?? live?.duration ?? 60,
     capacity: snapshot?.capacity ?? live?.capacity,
-    location: snapshot?.location ?? live?.location,
     note: snapshot?.note ?? live?.note,
     practitioner: recipients.names || undefined,
     profileUrl: recipients.profileUrl,
@@ -328,7 +326,6 @@ function sessionRows(
         "Catégorie",
         session.type ? (TYPE_LABELS[session.type] ?? session.type) : undefined,
       ],
-      ["Lieu", session.location],
       ["Praticien·ne", session.practitioner],
       [
         "Places",
@@ -399,7 +396,6 @@ async function sendCancellationEmails({
     summaryPrefix: "Annulation",
     start: session.start,
     duration: session.duration ?? 60,
-    location: session.location,
     practitioner: session.practitioner,
     note: session.note,
     profileUrl: session.profileUrl,

@@ -3,6 +3,9 @@
  * Server-side only: responses are attached to Resend emails.
  */
 
+/** Every session takes place here — hardcoded, not a Storyblok field. */
+const VENUE = "La Parent'elle";
+
 export type CalendarMethod = "PUBLISH" | "CANCEL";
 export type CalendarStatus = "TENTATIVE" | "CANCELLED" | "CONFIRMED";
 
@@ -15,7 +18,6 @@ export interface CalendarEventDetails {
   summaryPrefix?: string;
   start?: string;
   duration?: number;
-  location?: string;
   practitioner?: string;
   note?: string;
   profileUrl?: string;
@@ -75,7 +77,7 @@ export function buildCalendarAttachment(
   const ends = new Date(begins.getTime() + safeMinutes * 60_000);
   const description = [
     details.practitioner ? `Praticien·ne : ${details.practitioner}` : undefined,
-    details.location ? `Lieu : ${details.location}` : undefined,
+    `Lieu : ${VENUE}`,
     details.note ? `Précisions : ${details.note}` : undefined,
     details.profileUrl ? `Fiche : ${details.profileUrl}` : undefined,
   ]
@@ -102,7 +104,7 @@ export function buildCalendarAttachment(
     `DTEND:${toIcsTimestamp(ends)}`,
     `SUMMARY:${escapeIcsText(summary)}`,
     ...(description ? [`DESCRIPTION:${escapeIcsText(description)}`] : []),
-    ...(details.location ? [`LOCATION:${escapeIcsText(details.location)}`] : []),
+    `LOCATION:${escapeIcsText(VENUE)}`,
     ...(details.profileUrl ? [`URL;VALUE=URI:${escapeIcsText(details.profileUrl)}`] : []),
     `STATUS:${status}`,
     `SEQUENCE:${sequence}`,

@@ -2,7 +2,16 @@
 import { storyblokEditable } from "@storyblok/astro";
 import { resolveLink, imgSrc, imgAlt } from "../../lib/links";
 import Button from "../Button.astro";
-import { fetchSessionsByActivity, sessionTiming } from "../../lib/sessions";
+import {
+  fetchSessionsByActivity,
+  fetchSessionsByUuids,
+  fetchPractitioners,
+  sessionTiming,
+  formatDuration,
+  type SessionRecord,
+} from "../../lib/sessions";
+import { countBookingsBulk, isBookingsConfigured } from "../../lib/bookings";
+import { buildBookOpener } from "../../lib/bookDialog";
 
 interface Props {
   blok: {
@@ -15,50 +24,160 @@ interface Props {
     member_price?: string;
     booking_label?: string;
     booking_link?: any;
-    /** Linked `activity_page` story UUID: shows the next session slot. */
+    /** Linked `activity_page` story UUID: shows the next session slot (legacy). */
     activity_page?: string;
+    /** Linked `session` story UUIDs: the card is populated from the next
+     * upcoming one and hidden when none is left. Takes over `activity_page`
+     * when set. */
+    sessions?: string[];
   };
 }
 
+const TYPE_LABEL: Record<string, string> = {
+  activite: "Activité",
+  sport: "Sport",
+  bienetre: "Bien-être",
+  consultation: "Consultation",
+};
+
 const { blok } = Astro.props;
 const src = imgSrc(blok.image);
-const nextSession = (await fetchSessionsByActivity(
-  typeof blok.activity_page === "string" ? blok.activity_page : "",
-))[0];
+const bookingsOn = isBookingsConfigured();
+
+const sessionUuids = Array.isArray(blok.sessions)
+  ? blok.sessions.filter((u): u is string => typeof u === "string" && Boolean(u))
+  : [];
+const useSessions = sessionUuids.length > 0;
+
+// ---- session-driven mode: next upcoming referenced session ----
+let upcoming: SessionRecord[] = [];
+if (useSessions) {
+  try {
+    const now = new Date();
+    upcoming = (await fetchSessionsByUuids(sessionUuids))
+      .filter((s) => {
+        if (!s.start) return false;
+        const d = new Date(s.start);
+        return !Number.isNaN(d.getTime()) && d >= now;
+      })
+      .sort((a, b) => (a.start as string).localeCompare(b.start as string));
+  } catch {
+    upcoming = [];
+  }
+}
+
+let upcomingCounts: Record<string, number> = {};
+if (bookingsOn && upcoming.length) {
+  try {
+    upcomingCounts = await countBookingsBulk(upcoming.map((s) => s.uid));
+  } catch {
+    upcomingCounts = {};
+  }
+}
+/** Spots left, or null when unknown / externally booked. */
+const leftOf = (s: SessionRecord): number | null => {
+  if (s.external_booking || !s.capacity) return null;
+  return Math.max(0, s.capacity - (upcomingCounts[s.uid] ?? 0));
+};
+// Soonest session that can still take bookings (or whose booking is external);
+// when everything is full, fall back to the soonest so the card shows Complet.
+const featured =
+  upcoming.find((s) => s.external_booking || leftOf(s) === null || (leftOf(s) as number) > 0) ??
+  upcoming[0];
+
+// Practitioners of the featured session (names + booking links for the dialog).
+const featuredPeople: { name: string; url?: string | null; bookingUrl?: string | null }[] = [];
+if (featured) {
+  try {
+    for (const [, p] of await fetchPractitioners(featured.people ?? [])) {
+      featuredPeople.push({ name: p.name, url: p.url ?? null, bookingUrl: p.bookingUrl ?? null });
+    }
+  } catch {
+    /* practitioner names are a nice-to-have here */
+  }
+}
+const featuredNames = featuredPeople.map((p) => p.name).join(", ");
+const featuredTiming = featured
+  ? sessionTiming(featured.start, featured.duration ?? 60)
+  : undefined;
+const featuredLeft = featured ? leftOf(featured) : null;
+const featuredFull = featured ? !featured.external_booking && featuredLeft === 0 : false;
+
+// ---- legacy mode: manual fields + `activity_page` next slot ----
+const nextSession =
+  !useSessions && typeof blok.activity_page === "string" && blok.activity_page
+    ? (await fetchSessionsByActivity(blok.activity_page))[0]
+    : undefined;
 const nextTiming = nextSession
   ? sessionTiming(nextSession.start, nextSession.duration ?? 60)
   : undefined;
+
+// ---- display values: session wins when linked ----
+const title = featured?.title ?? blok.title;
+const category = featured ? (TYPE_LABEL[featured.type ?? ""] ?? featured.type) : blok.category;
+const metaLine = featured
+  ? [formatDuration(featured.duration ?? 60), featuredNames].filter(Boolean).join(" · ")
+  : [blok.duration, blok.practitioner].filter(Boolean).join(" · ");
+const timing = featuredTiming ?? nextTiming;
+const whenLabel =
+  featured && featuredTiming?.date
+    ? `${featuredTiming.date}${featuredTiming.range ? ` · ${featuredTiming.range}` : ""}`
+    : "";
+
+const opener =
+  featured && featured.start
+    ? buildBookOpener({
+        uid: featured.uid,
+        title: featured.title,
+        startISO: new Date(featured.start).toISOString(),
+        capacity: featured.capacity,
+        note: featured.note,
+        external: featured.external_booking,
+        people: featuredPeople,
+        label: whenLabel,
+      })
+    : "";
 ---
 
-<article class="activity" {...storyblokEditable(blok)}>
-  {src && (
-    <img class="activity-img" src={src} alt={imgAlt(blok.image, blok.title)} loading="lazy" />
-  )}
-  <div class="activity-body">
-    {blok.category && <p class="eyebrow">{blok.category}</p>}
-    {blok.title && <h3 class="activity-title">{blok.title}</h3>}
-    {(blok.duration || blok.practitioner) && (
-      <p class="activity-meta">
-        {[blok.duration, blok.practitioner].filter(Boolean).join(" · ")}
-      </p>
-    )}
-    {nextTiming?.date && (
-      <p class="activity-next">
-        Prochain créneau : {nextTiming.date}
-        {nextTiming.range && ` · ${nextTiming.range}`}
-      </p>
-    )}
-    {(blok.price || blok.member_price) && (
-      <p class="activity-prices">
-        {blok.price && <span class="price-full">{blok.price}</span>}
-        {blok.member_price && <span class="price-member">{blok.member_price}</span>}
-      </p>
-    )}
-    {blok.booking_label && (
-      <Button small variant="contrast" href={resolveLink(blok.booking_link)}>{blok.booking_label}</Button>
-    )}
-  </div>
-</article>
+{
+  (!useSessions || featured) && (
+    <article class="activity" {...storyblokEditable(blok)}>
+      {src && <img class="activity-img" src={src} alt={imgAlt(blok.image, title)} loading="lazy" />}
+      <div class="activity-body">
+        {category && <p class="eyebrow">{category}</p>}
+        {title && <h3 class="activity-title">{title}</h3>}
+        {metaLine && <p class="activity-meta">{metaLine}</p>}
+        {timing?.date && (
+          <p class="activity-next">
+            Prochain créneau : {timing.date}
+            {timing.range && ` · ${timing.range}`}
+          </p>
+        )}
+        {(blok.price || blok.member_price) && (
+          <p class="activity-prices">
+            {blok.price && <span class="price-full">{blok.price}</span>}
+            {blok.member_price && <span class="price-member">{blok.member_price}</span>}
+          </p>
+        )}
+        {featured ? (
+          featured.external_booking || (bookingsOn && !featuredFull) ? (
+            <Button small variant="contrast" href="#" onclick={opener}>
+              Réserver
+            </Button>
+          ) : bookingsOn && featuredFull ? (
+            <span class="activity-full">Complet</span>
+          ) : null
+        ) : (
+          blok.booking_label && (
+            <Button small variant="contrast" href={resolveLink(blok.booking_link)}>
+              {blok.booking_label}
+            </Button>
+          )
+        )}
+      </div>
+    </article>
+  )
+}
 
 <style>
   .activity {
@@ -120,5 +239,17 @@ const nextTiming = nextSession
     font-size: 1.25rem;
     font-weight: bold;
     color: var(--accent);
+  }
+
+  .activity-full {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .activity-body :global(.button-027) {
+    margin-top: 0.5rem;
   }
 </style>

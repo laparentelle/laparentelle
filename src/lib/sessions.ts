@@ -52,7 +52,6 @@ export interface SessionRecord {
   start?: string;
   duration?: number;
   capacity?: number;
-  location?: string;
   note?: string;
   /** `people` story-reference field: person UUIDs. */
   people: string[];
@@ -101,7 +100,6 @@ function toSessionRecord(story: Record<string, any>): SessionRecord | null {
     start: content.start as string | undefined,
     duration: toMinutes(content.duration as string | number | undefined),
     capacity: toCapacity(content.capacity),
-    location: content.location as string | undefined,
     note: content.note as string | undefined,
     people: Array.isArray(content.people)
       ? (content.people as string[]).filter(Boolean)
@@ -144,6 +142,11 @@ async function fetchSessionStoriesByUuids(uuids: string[]): Promise<SessionRecor
   return unique
     .map((uuid) => byUuid.get(uuid))
     .filter((s): s is SessionRecord => Boolean(s));
+}
+
+/** Session stories by UUIDs, in the requested order (missing UUIDs skipped). */
+export async function fetchSessionsByUuids(uuids: string[]): Promise<SessionRecord[]> {
+  return fetchSessionStoriesByUuids(uuids);
 }
 
 /** Every session of the planning story, in Storyblok order. */

@@ -43,7 +43,6 @@ export interface BookingSessionSnapshot {
   start?: string;
   duration?: number;
   capacity?: number;
-  location?: string;
   note?: string;
   practitioners?: { name: string; email?: string; url?: string }[];
   recipientEmails?: string[];

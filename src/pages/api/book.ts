@@ -131,7 +131,6 @@ export const POST: APIRoute = async ({ request }) => {
       start,
       duration,
       capacity: serverCapacity,
-      location: session?.location,
       note: session?.note,
       practitioners: recipients.map((r) => ({
         name: r.name,
@@ -183,7 +182,6 @@ export const POST: APIRoute = async ({ request }) => {
               : undefined,
           ],
           ["Catégorie", typeLabel],
-          ["Lieu", session?.location],
           ["Praticien·ne", recipients.length ? who : undefined],
           [
             "Places",
@@ -268,7 +266,6 @@ export const POST: APIRoute = async ({ request }) => {
         summaryPrefix: "Demande de réservation",
         start,
         duration,
-        location: session?.location,
         practitioner: recipients.length ? who : undefined,
         note: session?.note,
         profileUrl: profiles[0]?.url,

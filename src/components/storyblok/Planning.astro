@@ -7,6 +7,7 @@ import {
   isBookingsConfigured,
 } from "../../lib/bookings";
 import { fetchPractitioners, fetchPlanningSessions } from "../../lib/sessions";
+import { buildBookOpener } from "../../lib/bookDialog";
 
 interface Props {
   blok: {
@@ -117,7 +118,7 @@ try {
     people.set(uuid, { name: p.name, url: p.url, bookingUrl: p.bookingUrl });
   }
 } catch {
-  /* no linked person: the dialog falls back to the free-text practitioner */
+  /* no linked person: the dialog shows the session without practitioner links */
 }
 
 const practitionersOf = (s: (typeof sessions)[number]) =>
@@ -125,12 +126,11 @@ const practitionersOf = (s: (typeof sessions)[number]) =>
     .map((uuid) => people.get(uuid))
     .filter((p): p is { name: string; url?: string; bookingUrl?: string } => Boolean(p?.name));
 
-/** Grid and agenda labels use linked people first, then the free-text field. */
-const practitionerLabel = (s: (typeof sessions)[number]) => {
-  const names = practitionersOf(s).map((p) => p.name);
-  if (s.practitioner && !names.includes(s.practitioner)) names.push(s.practitioner);
-  return names.join(", ");
-};
+/** Grid and agenda labels use the linked `people` person stories. */
+const practitionerLabel = (s: (typeof sessions)[number]) =>
+  practitionersOf(s)
+    .map((p) => p.name)
+    .join(", ");
 
 /** Grid slots are narrow: drop the redundant "Consultation — " prefix. */
 const compactTitle = (title?: string) =>
@@ -221,53 +221,24 @@ const hours = Array.from(
   (_, i) => gridStart + i * 60,
 );
 
-// Opens the booking dialog for a session (shared by both views).
-// Externally-booked sessions show a redirect message + practitioner link
-// instead of the planning form.
-const bookJs = (s: (typeof sessions)[number], label: string) => {
-  // Linked person stories first (they carry the public page and the
-  // booking platform link), then the free-text `practitioner` field as a
-  // nameless fallback.
-  const people = practitionersOf(s).map((p) => ({ name: p.name, url: p.url ?? null, bookingUrl: p.bookingUrl ?? null }));
-  if (!people.length && s.practitioner) people.push({ name: s.practitioner, url: null, bookingUrl: null });
-  return (
-    `(function(){const d=document.getElementById('book-dialog');if(!d)return;` +
-    `const ext=${JSON.stringify(s.external)};` +
-    `const titleEl=d.querySelector('.book-title');if(titleEl)titleEl.textContent=ext?'Réservation directe':'Demande de réservation';` +
-    `const formEl=d.querySelector('#book-form');if(formEl)formEl.hidden=ext;` +
-    `const extBox=d.querySelector('[data-book-external]');if(extBox)extBox.hidden=!ext;` +
-    `d.querySelector('[name=session_uid]').value='${s.uid}';` +
-    `d.querySelector('[name=session_title]').value=${JSON.stringify(s.title ?? "")};` +
-    `d.querySelector('[name=session_start]').value='${s.date.toISOString()}';` +
-    `d.querySelector('[name=session_capacity]').value='${s.capacity}';` +
-    `const t=d.querySelector('[data-book-when]');if(t)t.textContent=${JSON.stringify(label)};` +
-    `const n=d.querySelector('[data-book-note]');if(n){const v=${JSON.stringify(s.note ?? "")};n.textContent=v;n.hidden=!v;}` +
-    `const list=${JSON.stringify(people)};` +
-    `if(ext){const links=d.querySelector('[data-book-external-links]');if(links){links.textContent='';` +
-    `const targets=list.map((p)=>({name:p.name,href:p.bookingUrl||p.url}));` +
-    `const withUrl=targets.filter((p)=>p.href);` +
-    `for(const p of withUrl){const a=document.createElement('a');a.className='book-external-btn';a.href=p.href;a.target='_blank';a.rel='noopener';` +
-    `a.textContent=targets.length>1?('Réserver avec '+p.name):'Réserver directement';links.appendChild(a);}` +
-    `const withPage=list.filter((p)=>!p.bookingUrl&&p.url);` +
-    `for(const p of withPage){const a=document.createElement('a');a.className='book-external-page';a.href=p.url;a.target='_blank';a.rel='noopener';` +
-    `a.textContent=list.length>1?('Voir la fiche de '+p.name):'Voir la fiche du praticien';links.appendChild(a);}}}` +
-    `const noUrl=d.querySelector('[data-book-external-noname]');if(noUrl){` +
-    `const names=list.filter((p)=>!p.bookingUrl&&!p.url).map((p)=>p.name);` +
-    `if(!list.some((p)=>p.bookingUrl||p.url)&&names.length){noUrl.textContent='Contactez directement '+names.join(', ')+' pour réserver.';noUrl.hidden=false;}` +
-    `else{noUrl.textContent='';noUrl.hidden=true;}}` +
-    `const box=d.querySelector('[data-book-people]');const lab=d.querySelector('[data-book-people-label]');` +
-    `const aside=d.querySelector('.book-aside');let has=false;if(box){box.textContent='';` +
-    `if(!ext&&list.length){has=true;if(lab)lab.hidden=false;box.hidden=false;` +
-    `for(const p of list){const a=document.createElement(p.url?'a':'div');a.className='book-person';` +
-    `if(p.url){a.href=p.url;a.target='_blank';a.rel='noopener';}` +
-    `const nm=document.createElement('span');nm.className='book-person-name';nm.textContent=p.name;a.appendChild(nm);` +
-    `if(p.url){const c=document.createElement('span');c.className='book-person-cta';c.textContent='Voir la fiche';a.appendChild(c);}` +
-    `box.appendChild(a);}}` +
-    `else{if(lab)lab.hidden=true;box.hidden=true;}}` +
-    `if(aside){const note=n&&!n.hidden;aside.hidden=ext?true:(!has&&!note);}` +
-    `d.showModal();})()`
-  );
-};
+// Opens the shared booking dialog for a session (see `BookDialog.astro`,
+// filled at click time by the opener built in `src/lib/bookDialog.ts`).
+const bookJs = (s: (typeof sessions)[number], label: string) =>
+  buildBookOpener({
+    uid: s.uid,
+    title: s.title,
+    startISO: s.date.toISOString(),
+    capacity: s.capacity,
+    note: s.note,
+    external: s.external,
+    // Linked person stories carry the public page and the booking platform link.
+    people: practitionersOf(s).map((p) => ({
+      name: p.name,
+      url: p.url ?? null,
+      bookingUrl: p.bookingUrl ?? null,
+    })),
+    label,
+  });
 
 ---
 
@@ -458,61 +429,6 @@ const bookJs = (s: (typeof sessions)[number], label: string) => {
   )}
 </section>
 
-<dialog id="book-dialog" class="book-dialog">
-  <form method="dialog" class="book-close-form">
-    <button class="book-close" value="close" aria-label="Fermer">
-      <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">
-        <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-      </svg>
-    </button>
-  </form>
-  <h3 class="book-title">Demande de réservation</h3>
-  <p class="book-when" data-book-when></p>
-
-  <div class="book-external" data-book-external hidden>
-    <p class="book-external-msg">La réservation de ce créneau ne passe pas par le planning.</p>
-    <div class="book-external-links" data-book-external-links></div>
-    <p class="book-external-noname" data-book-external-noname hidden></p>
-  </div>
-
-  <div class="book-body">
-    <form class="contact-form book-form" id="book-form">
-      <input type="hidden" name="session_uid" />
-      <input type="hidden" name="session_title" />
-      <input type="hidden" name="session_start" />
-      <input type="hidden" name="session_capacity" />
-      <label>
-        Nom
-        <input type="text" name="name" required autocomplete="family-name" />
-      </label>
-      <label>
-        Prénom
-        <input type="text" name="firstname" required autocomplete="given-name" />
-      </label>
-      <label>
-        Email
-        <input type="email" name="email" required autocomplete="email" />
-      </label>
-      <label>
-        Téléphone <span class="opt">(facultatif)</span>
-        <input type="tel" name="phone" autocomplete="tel" />
-      </label>
-      <label class="hp" aria-hidden="true">
-        Site web
-        <input type="text" name="website" tabindex="-1" autocomplete="off" />
-      </label>
-      <Button submit>Confirmer ma demande</Button>
-      <p class="form-status" role="status" aria-live="polite"></p>
-    </form>
-
-    <aside class="book-aside" hidden>
-      <p class="book-aside-label" data-book-people-label hidden>Praticien·ne</p>
-      <div class="book-people" data-book-people hidden></div>
-      <p class="book-aside-note" data-book-note hidden></p>
-    </aside>
-  </div>
-</dialog>
-
 <script>
   const weeks = [...document.querySelectorAll<HTMLElement>("[data-page]")];
   const range = document.querySelector("[data-page-range]");
@@ -594,34 +510,6 @@ const bookJs = (s: (typeof sessions)[number], label: string) => {
       });
   }
 
-  // Booking submit
-  const dialog = document.getElementById("book-dialog") as HTMLDialogElement | null;
-  dialog?.addEventListener("click", (event) => {
-    if (event.target === dialog) dialog.close();
-  });
-
-  const form = document.getElementById("book-form") as HTMLFormElement | null;
-  form?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const status = form.querySelector(".form-status");
-    const data = Object.fromEntries(new FormData(form).entries());
-    if (status) status.textContent = "Envoi en cours…";
-    try {
-      const res = await fetch("/api/book", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || "Erreur");
-      if (status) status.textContent = "Demande envoyée ! Vous recevez un e-mail de confirmation.";
-      form.reset();
-      setTimeout(() => document.getElementById("book-dialog")?.close(), 2500);
-    } catch (err) {
-      if (status)
-        status.textContent = err instanceof Error ? err.message : "Une erreur est survenue.";
-    }
-  });
 </script>
 
 <style>
@@ -1092,200 +980,4 @@ const bookJs = (s: (typeof sessions)[number], label: string) => {
     color: var(--c-pine);
   }
 
-  /* ---- booking dialog: deliberately flat, no neumorphism / no blur ---- */
-  .book-dialog {
-    border: 1px solid var(--c-line);
-    border-radius: 0.75rem;
-    padding: 1.75rem 2rem 2rem;
-    max-width: 44rem;
-    width: calc(100% - 2rem);
-    background: #fff;
-    color: var(--c-ink);
-    box-shadow: 0 1px 2px rgb(32 59 52 / 0.08);
-  }
-
-  .book-dialog::backdrop {
-    background: transparent;
-    backdrop-filter: none;
-  }
-
-  .book-close-form {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-  }
-
-  .book-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    width: 2rem;
-    height: 2rem;
-    border: 1px solid var(--c-line);
-    border-radius: 50%;
-    background: #fff;
-    color: var(--c-pine);
-    cursor: pointer;
-  }
-
-  .book-close svg {
-    display: block;
-    width: 0.65rem;
-    height: 0.65rem;
-  }
-
-  .book-title {
-    margin: 0 0 0.25rem;
-  }
-
-  .book-when {
-    margin: 0 0 1.5rem;
-    color: var(--c-pine-soft);
-  }
-
-  .book-external {
-    display: grid;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .book-external-msg {
-    margin: 0;
-    font-size: 1rem;
-  }
-
-  .book-external-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-  }
-
-  /* Both links are built at runtime by the dialog script, so they need :global() */
-  :global(.book-external-btn) {
-    display: inline-block;
-    padding: 0.6rem 1.3rem;
-    border-radius: var(--radius-pill);
-    background: var(--c-marigold);
-    color: var(--c-pine-deep);
-    font-size: 0.82rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    text-decoration: none;
-  }
-
-  :global(.book-external-btn:hover) {
-    background: var(--c-marigold-deep);
-    color: #fff;
-  }
-
-  :global(.book-external-page) {
-    display: inline-block;
-    padding: 0.6rem 0.2rem;
-    font-size: 0.82rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--c-pine-soft);
-  }
-
-  :global(.book-external-page:hover) {
-    color: var(--c-pine-deep);
-  }
-
-  .book-external-noname {
-    margin: 0;
-    font-size: 0.9rem;
-    color: var(--muted);
-  }
-
-  .book-body {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem 2.5rem;
-  }
-
-  .book-form {
-    flex: 1 1 18rem;
-    margin: 0;
-    max-width: none;
-  }
-
-  .book-aside {
-    flex: 0 0 13rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    padding-left: 2rem;
-    border-left: 1px solid var(--c-line);
-  }
-
-  @media (max-width: 34rem) {
-    .book-aside {
-      flex: 1 1 100%;
-      order: -1;
-      padding-left: 0;
-      border-left: 0;
-      padding-bottom: 1.25rem;
-      border-bottom: 1px solid var(--c-line);
-    }
-  }
-
-  .book-aside-label {
-    margin: 0;
-    font-size: 0.7rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .book-people {
-    display: grid;
-    gap: 0.5rem;
-  }
-
-  /* Built at runtime by the dialog script, so it needs :global() */
-  :global(.book-person) {
-    display: grid;
-    gap: 0.1rem;
-    padding: 0.6rem 0.8rem;
-    border: 1px solid var(--c-line);
-    border-radius: 0.6rem;
-    background: var(--c-cream);
-    text-decoration: none;
-  }
-
-  :global(.book-person:hover) {
-    border-color: var(--c-pine);
-    background: #fff;
-  }
-
-  :global(.book-person-name) {
-    font-size: 0.95rem;
-    color: var(--c-pine-deep);
-  }
-
-  :global(.book-person-cta) {
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--c-pine-soft);
-  }
-
-  .book-aside-note {
-    margin: 0;
-    font-size: 0.85rem;
-    font-style: italic;
-    color: var(--muted);
-  }
-
-  .opt {
-    text-transform: none;
-    letter-spacing: normal;
-    font-size: 0.8rem;
-  }
-
-  .hp {
-    position: absolute;
-    left: -9999px;
-  }
 </style>

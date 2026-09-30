@@ -1,0 +1,207 @@
+---
+/**
+ * Editor-only session summary, used as the Visual Editor preview for
+ * `seances/*` stories (which have no public page).
+ *
+ * Renders ONLY in dev / preview builds (IS_PREVIEW=true). In production
+ * this route always 404s, so session data never leaks publicly.
+ */
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import {
+  fetchPractitioners,
+  fetchSession,
+  sessionTiming,
+  storyVersion,
+} from "../../lib/sessions";
+import { countBookings, isBookingsConfigured } from "../../lib/bookings";
+import { useStoryblokApi } from "@storyblok/astro";
+
+const isPreview = import.meta.env.DEV || import.meta.env.IS_PREVIEW === "true";
+if (!isPreview) return new Response(null, { status: 404 });
+
+const rawSlug = (Astro.params.slug ?? "").replace(/^\/+|\/+$/g, "");
+// Defensive: also accept a full `seances/slug` form if ever routed here.
+const slug = rawSlug.replace(/^seances\//, "");
+if (!slug) return new Response(null, { status: 404 });
+
+const api = useStoryblokApi();
+let story: any = null;
+try {
+  const { data } = await api.get(`cdn/stories/seances/${slug}`, {
+    version: storyVersion(),
+  });
+  story = data?.story ?? null;
+} catch {
+  story = null;
+}
+if (!story || story.content?.component !== "session") {
+  return new Response(null, { status: 404 });
+}
+
+const c = story.content;
+const timing = sessionTiming(c.start, Number(c.duration) || 60);
+
+const people = await fetchPractitioners(
+  Array.isArray(c.people) ? c.people : [],
+).catch(() => new Map());
+
+let activityTitle: string | null = null;
+if (typeof c.activity === "string" && c.activity) {
+  try {
+    const { data } = await api.get("cdn/stories", {
+      version: storyVersion(),
+      by_uuids: c.activity,
+    });
+    activityTitle =
+      (data?.stories?.[0]?.content?.title as string | undefined) ?? null;
+  } catch {
+    activityTitle = null;
+  }
+}
+
+// Is this session actually referenced by the planning story?
+let inPlanning: boolean | null = null;
+try {
+  const { data } = await api.get("cdn/stories/programme-du-mois", {
+    version: storyVersion(),
+  });
+  const refs =
+    (data?.story?.content?.body ?? []).find(
+      (b: any) => b?.component === "planning",
+    )?.sessions ?? [];
+  inPlanning = Array.isArray(refs) && refs.includes(story.uuid);
+} catch {
+  inPlanning = null;
+}
+
+let bookings: number | null = null;
+if (isBookingsConfigured()) {
+  try {
+    bookings = await countBookings(story.uuid);
+  } catch {
+    bookings = null;
+  }
+}
+---
+
+<BaseLayout
+  title={`Aperçu — ${c.title ?? story.name}`}
+  description="Aperçu éditeur d’une séance (non public)."
+  noindex
+>
+  <section class="preview-blok blok-section">
+    <p class="eyebrow">Aperçu éditeur — page non publique</p>
+    <h1>{c.title ?? story.name}</h1>
+    <p class="section-intro">
+      {timing.date}
+      {timing.range && ` · ${timing.range}`}
+      {timing.duration && ` (${timing.duration})`}
+    </p>
+
+    <dl class="preview-grid">
+      <div>
+        <dt>Type</dt>
+        <dd>{c.type ?? "—"}</dd>
+      </div>
+      <div>
+        <dt>Lieu</dt>
+        <dd>{c.location || "—"}</dd>
+      </div>
+      <div>
+        <dt>Places</dt>
+        <dd>
+          {c.capacity || "—"}
+          {bookings !== null && ` · ${bookings} réservation${bookings > 1 ? "s" : ""} active${bookings > 1 ? "s" : ""}`}
+        </dd>
+      </div>
+      <div>
+        <dt>Praticien·ne(s)</dt>
+        <dd>
+          {[...people.values()].length
+            ? [...people.values()].map((p) => (
+                <>
+                  {p.name}
+                  {p.email && <small> · {p.email}</small>}
+                  <br />
+                </>
+              ))
+            : "—"}
+        </dd>
+      </div>
+      <div>
+        <dt>Activité liée</dt>
+        <dd>{activityTitle ?? "—"}</dd>
+      </div>
+      <div>
+        <dt>Réservation externe</dt>
+        <dd>{c.external_booking ? "Oui" : "Non"}</dd>
+      </div>
+      {c.note && (
+        <div>
+          <dt>Précisions</dt>
+          <dd>{c.note}</dd>
+        </div>
+      )}
+      <div>
+        <dt>Dans le planning</dt>
+        <dd>
+          {inPlanning === null
+            ? "—"
+            : inPlanning
+              ? "Oui"
+              : "Non — ajoutez cette séance aux références de programme-du-mois"}
+        </dd>
+      </div>
+      <div>
+        <dt>Identifiant réservation</dt>
+        <dd><code>{story.uuid}</code></dd>
+      </div>
+    </dl>
+  </section>
+</BaseLayout>
+
+<style>
+  .preview-blok {
+    max-width: 44rem;
+  }
+
+  .preview-grid {
+    margin: 2rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+    background: #fff;
+    border: 1px solid var(--c-line);
+    border-radius: 0.75rem;
+    padding: 1.5rem 1.75rem;
+  }
+
+  .preview-grid > div {
+    display: grid;
+    grid-template-columns: 11rem 1fr;
+    gap: 1rem;
+    margin: 0;
+  }
+
+  .preview-grid dt {
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .preview-grid dd {
+    margin: 0;
+  }
+
+  .preview-grid small {
+    color: var(--muted);
+  }
+
+  .preview-grid code {
+    font-size: 0.85rem;
+    word-break: break-all;
+  }
+</style>
