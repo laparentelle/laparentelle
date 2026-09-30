@@ -2,6 +2,8 @@
 import "../styles/global.css";
 import Button from "../components/Button.astro";
 import BookDialog from "../components/BookDialog.astro";
+import { getGlobalStory } from "../lib/storyblok";
+import { resolveLink, imgSrc, imgAlt } from "../lib/links";
 
 interface Props {
   title?: string;
@@ -10,10 +12,76 @@ interface Props {
 }
 
 const {
-  title = "La Parent'elle — un lieu pluridisciplinaire pour la femme et la famille",
-  description = "La Parent'elle, un lieu pluridisciplinaire pour la femme et la famille.",
+  title: pageTitle,
+  description: pageDescription,
   noindex = false,
 } = Astro.props;
+
+// Site-wide settings (never throws: falls back when the story is missing).
+const globalContent = ((await getGlobalStory())?.content ?? {}) as Record<string, any>;
+const gtext = (v: unknown, fallback = "") =>
+  typeof v === "string" && v.trim() ? v.trim() : fallback;
+const isHex = (v: unknown): v is string =>
+  typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v.trim());
+
+const siteName = gtext(globalContent.site_name, "La Parent'elle");
+const title =
+  pageTitle ??
+  gtext(
+    globalContent.seo_title,
+    "La Parent'elle — un lieu pluridisciplinaire pour la femme et la famille",
+  );
+const description =
+  pageDescription ??
+  gtext(
+    globalContent.seo_description,
+    "La Parent'elle, un lieu pluridisciplinaire pour la femme et la famille.",
+  );
+const favicon = imgSrc(globalContent.favicon) || "/favicon.svg";
+const logoSrc = imgSrc(globalContent.logo);
+
+const menuItems = (
+  Array.isArray(globalContent.menu_items) && globalContent.menu_items.length
+    ? globalContent.menu_items.filter(
+        (b: any) => b?.component === "menu_item" && b.label,
+      )
+    : [
+        { label: "Accueil", link: { cached_url: "home" } },
+        { label: "À propos", link: { cached_url: "a-propos" } },
+        { label: "Notre équipe", link: { cached_url: "equipe" } },
+        { label: "Activités", link: { cached_url: "activites" } },
+        { label: "Planning", link: { cached_url: "programme-du-mois" } },
+        { label: "Contact", link: { cached_url: "contact" } },
+      ]
+).map((b: any) => ({ label: b.label as string, href: resolveLink(b.link) }));
+const ctaLabel = gtext(globalContent.cta_label);
+const ctaHref = resolveLink(globalContent.cta_link);
+
+const footer = {
+  brand: gtext(globalContent.footer_brand, "La Parent'elle"),
+  tagline: gtext(
+    globalContent.footer_tagline,
+    "Un lieu pluridisciplinaire pour la femme et la famille.",
+  ),
+  address: gtext(globalContent.footer_address),
+  phone: gtext(globalContent.footer_phone),
+  email: gtext(globalContent.footer_email),
+  note: gtext(
+    globalContent.footer_note,
+    "Mazan, au pied du Ventoux · Bien-être, Parentalité, Sport",
+  ),
+};
+
+const colorVars = (
+  [
+    ["--c-pine", globalContent.color_primary],
+    ["--c-marigold", globalContent.color_accent],
+    ["--c-cream", globalContent.color_background],
+  ] as [string, unknown][]
+)
+  .filter(([, v]) => isHex(v))
+  .map(([k, v]) => `${k}:${(v as string).trim()}`)
+  .join(";");
 ---
 
 <html lang="fr">
@@ -24,7 +92,8 @@ const {
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <meta name="theme-color" content="#2e5249" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+    {colorVars && <style set:html={`:root{${colorVars}}`} />}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -40,15 +109,38 @@ const {
   <body>
     <header class="site-header">
       <div class="header-inner">
-        <p class="site-title"><a href="/">La Parent'elle</a></p>
+        <p class="site-title">
+          <a href="/" aria-label={siteName}>
+            {logoSrc ? (
+              <img src={logoSrc} alt={siteName} class="site-logo" />
+            ) : (
+              siteName
+            )}
+          </a>
+        </p>
         <nav class="site-nav" aria-label="Navigation principale">
-          <a href="/">Accueil</a>
-          <a href="/a-propos">À propos</a>
-          <a href="/equipe">Notre équipe</a>
-          <a href="/activites">Activités</a>
-          <a href="/programme-du-mois">Planning</a>
-          <a href="/contact">Contact</a>
-          <Button small href="/contact">Nous rejoindre</Button>
+          <button
+            type="button"
+            class="nav-toggle"
+            aria-expanded="false"
+            aria-controls="nav-links"
+            aria-label="Ouvrir le menu"
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+              <path
+                d="M2.5 5h15M2.5 10h15M2.5 15h15"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+          <div class="nav-links" id="nav-links">
+            {menuItems.map((item) => (
+              <a href={item.href}>{item.label}</a>
+            ))}
+            {ctaLabel && <Button small href={ctaHref}>{ctaLabel}</Button>}
+          </div>
         </nav>
       </div>
     </header>
@@ -57,11 +149,68 @@ const {
     </main>
     <footer class="site-footer">
       <div class="footer-inner">
-        <p class="footer-brand">La Parent'elle</p>
-        <p>Un lieu pluridisciplinaire pour la femme et la famille.</p>
-        <small>Mazan, au pied du Ventoux · Bien-être, Parentalité, Sport</small>
+        <p class="footer-brand">{footer.brand}</p>
+        {footer.tagline && <p>{footer.tagline}</p>}
+        {(footer.address || footer.phone || footer.email) && (
+          <p>
+            {[footer.address, footer.phone, footer.email]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        )}
+        {footer.note && <small>{footer.note}</small>}
       </div>
     </footer>
     <BookDialog />
+    <script>
+      // Overflow-aware nav: the hamburger appears whenever the links no
+      // longer fit, whatever the link count or viewport width.
+      document.documentElement.classList.add("js");
+      const nav = document.querySelector(".site-nav");
+      const links = nav?.querySelector(".nav-links");
+      const toggle = nav?.querySelector(".nav-toggle");
+      if (nav && links && toggle) {
+        const setOpen = (open: boolean) => {
+          nav.classList.toggle("is-open", open);
+          toggle.setAttribute("aria-expanded", String(open));
+          toggle.setAttribute("aria-label", open ? "Fermer le menu" : "Ouvrir le menu");
+        };
+        const update = () => {
+          // Measure in the expanded state, then collapse if overflowing.
+          // Uses layout boxes (not scrollWidth: the CTA button's 3D hover
+          // face pollutes the scroll overflow area).
+          nav.classList.remove("is-collapsed");
+          const linksBox = links.getBoundingClientRect();
+          const last = links.lastElementChild;
+          const overflows =
+            !!last && last.getBoundingClientRect().right > linksBox.right + 1;
+          nav.classList.toggle("is-collapsed", overflows);
+          if (!overflows) setOpen(false);
+        };
+        toggle.addEventListener("click", () => {
+          setOpen(!nav.classList.contains("is-open"));
+        });
+        links.addEventListener("click", (event) => {
+          if ((event.target as HTMLElement).closest("a")) setOpen(false);
+        });
+        document.addEventListener("click", (event) => {
+          if (!nav.contains(event.target as Node)) setOpen(false);
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            setOpen(false);
+            (toggle as HTMLButtonElement).blur();
+          }
+        });
+        let resizeTimer: number | undefined;
+        window.addEventListener("resize", () => {
+          window.clearTimeout(resizeTimer);
+          resizeTimer = window.setTimeout(update, 120);
+        });
+        if (document.fonts?.ready) document.fonts.ready.then(update);
+        window.addEventListener("load", update);
+        update();
+      }
+    </script>
   </body>
 </html>

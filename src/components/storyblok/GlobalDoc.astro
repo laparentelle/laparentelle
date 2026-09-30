@@ -1,0 +1,215 @@
+---
+/**
+ * Editor-only documentation for the `global` story (site settings).
+ * Rendered exclusively by [...slug].astro in preview builds — the /global
+ * URL 404s in production.
+ */
+import { resolveLink, imgSrc } from "../../lib/links";
+
+interface Props {
+  story: any;
+}
+
+const { story } = Astro.props;
+const c = story.content ?? {};
+
+const text = (v: unknown, fallback = "—") =>
+  typeof v === "string" && v.trim() ? v : fallback;
+
+const menuItems = Array.isArray(c.menu_items)
+  ? c.menu_items.filter((b: any) => b?.component === "menu_item" && b.label)
+  : [];
+
+const isHex = (v: unknown): v is string =>
+  typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v.trim());
+
+const colors = [
+  { label: "Primaire", key: "color_primary", help: "Titres, boutons, liens — ex. #2e5249." },
+  { label: "Accent", key: "color_accent", help: "Contrastes, survols — ex. #e9a13b." },
+  { label: "Fond", key: "color_background", help: "Fond des pages — ex. #faf6ee." },
+];
+---
+
+<section class="global-doc blok-section">
+  <p class="eyebrow">Réglages du site — page non publique</p>
+  <h1>Global</h1>
+  <p class="section-intro">
+    Cette page documente la story <code>global</code> : chaque réglage ci-dessous
+    est modifiable dans Storyblok sans toucher au code. Vide = valeur par défaut du thème.
+  </p>
+
+  <h2>Identité</h2>
+  <dl class="doc-grid">
+    <div>
+      <dt>Nom du site <span>site_name</span></dt>
+      <dd>{text(c.site_name)} — affiché dans l’en-tête si aucun logo.</dd>
+    </div>
+    <div>
+      <dt>Logo <span>logo</span></dt>
+      <dd>
+        {imgSrc(c.logo) ? (
+          <>
+            <img src={imgSrc(c.logo)} alt="Logo actuel" class="doc-logo" />
+            <br />Remplace le nom du site dans l’en-tête.
+          </>
+        ) : (
+          "Non défini — le nom du site s’affiche en texte."
+        )}
+      </dd>
+    </div>
+    <div>
+      <dt>Favicon <span>favicon</span></dt>
+      <dd>
+        {imgSrc(c.favicon)
+          ? "Défini — icône du navigateur personnalisée."
+          : "Non défini — favicon par défaut."}
+      </dd>
+    </div>
+  </dl>
+
+  <h2>Référencement (repli)</h2>
+  <dl class="doc-grid">
+    <div>
+      <dt>Titre par défaut <span>seo_title</span></dt>
+      <dd>{text(c.seo_title)}</dd>
+    </div>
+    <div>
+      <dt>Description par défaut <span>seo_description</span></dt>
+      <dd>{text(c.seo_description)}</dd>
+    </div>
+  </dl>
+  <p class="doc-hint">
+    Utilisés uniquement quand une page ne définit pas son propre titre SEO.
+  </p>
+
+  <h2>Menu</h2>
+  {menuItems.length ? (
+    <ul class="doc-list">
+      {menuItems.map((b: any) => (
+        <li>
+          <strong>{b.label}</strong> → <code>{resolveLink(b.link)}</code>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p class="doc-hint">Aucun lien — le menu par défaut s’affiche.</p>
+  )}
+  <dl class="doc-grid">
+    <div>
+      <dt>Bouton <span>cta_label + cta_link</span></dt>
+      <dd>
+        {text(c.cta_label, "") ? (
+          <>
+            « {c.cta_label} » → <code>{resolveLink(c.cta_link)}</code>
+          </>
+        ) : (
+          "Non défini — aucun bouton."
+        )}
+      </dd>
+    </div>
+  </dl>
+
+  <h2>Pied de page</h2>
+  <dl class="doc-grid">
+    <div><dt>Marque <span>footer_brand</span></dt><dd>{text(c.footer_brand)}</dd></div>
+    <div><dt>Baseline <span>footer_tagline</span></dt><dd>{text(c.footer_tagline)}</dd></div>
+    <div><dt>Adresse <span>footer_address</span></dt><dd>{text(c.footer_address)}</dd></div>
+    <div><dt>Téléphone <span>footer_phone</span></dt><dd>{text(c.footer_phone)}</dd></div>
+    <div><dt>E-mail <span>footer_email</span></dt><dd>{text(c.footer_email)}</dd></div>
+    <div><dt>Petite ligne <span>footer_note</span></dt><dd>{text(c.footer_note)}</dd></div>
+  </dl>
+
+  <h2>Couleurs</h2>
+  <dl class="doc-grid">
+    {colors.map((col) => (
+      <div>
+        <dt>
+          {col.label} <span>{col.key}</span>
+        </dt>
+        <dd>
+          {isHex(c[col.key]) && (
+            <i class="doc-swatch" style={`background:${c[col.key].trim()}`} />
+          )}{" "}
+          {text(c[col.key])} — {col.help}
+        </dd>
+      </div>
+    ))}
+  </dl>
+</section>
+
+<style>
+  .global-doc {
+    max-width: 44rem;
+  }
+
+  .global-doc h2 {
+    margin: 2.5rem 0 0.5rem;
+    font-size: 1.4rem;
+  }
+
+  .global-doc code {
+    font-size: 0.85rem;
+    word-break: break-all;
+  }
+
+  .doc-grid {
+    margin: 1rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+    background: #fff;
+    border: 1px solid var(--c-line);
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .doc-grid > div {
+    display: grid;
+    grid-template-columns: 12rem 1fr;
+    gap: 1rem;
+    margin: 0;
+  }
+
+  .doc-grid dt {
+    font-weight: 600;
+  }
+
+  .doc-grid dt span {
+    display: block;
+    font-weight: 400;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .doc-grid dd {
+    margin: 0;
+  }
+
+  .doc-hint {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-style: italic;
+  }
+
+  .doc-list {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .doc-logo {
+    max-height: 2.5rem;
+    width: auto;
+  }
+
+  .doc-swatch {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    border: 1px solid var(--c-line);
+    vertical-align: baseline;
+  }
+</style>

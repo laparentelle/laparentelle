@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import StoryblokComponent from "@storyblok/astro/StoryblokComponent.astro";
 import Person from "../components/storyblok/Person.astro";
 import ActivityPage from "../components/storyblok/ActivityPage.astro";
+import GlobalDoc from "../components/storyblok/GlobalDoc.astro";
 import { getPageStory } from "../lib/storyblok";
 
 export const prerender = false;
@@ -18,6 +19,12 @@ try {
 if (!story) return new Response(null, { status: 404 });
 
 const content = story.content;
+// The `global` settings story is preview-only documentation: it must never
+// render as a public page.
+const isGlobalDoc = content.component === "global";
+const isPreviewEnv =
+  import.meta.env.DEV || import.meta.env.IS_PREVIEW === "true";
+if (isGlobalDoc && !isPreviewEnv) return new Response(null, { status: 404 });
 // Session stories live under seances/ and are only rendered through the
 // planning / activity pages — never as standalone pages.
 if ((slug ?? "").startsWith("seances/") || content.component === "session") {
@@ -32,8 +39,10 @@ if (content.component === "person" && content.page_enabled === false) {
 const title = content.seo_title ?? content.name ?? story.name;
 ---
 
-<BaseLayout title={title} description={content.seo_description}>
-  {content.component === "person" ? (
+<BaseLayout title={title} description={content.seo_description} noindex={isGlobalDoc}>
+  {isGlobalDoc ? (
+    <GlobalDoc story={story} />
+  ) : content.component === "person" ? (
     <Person blok={content} tags={story.tag_list ?? []} />
   ) : content.component === "activity_page" ? (
     <ActivityPage blok={content} tags={story.tag_list ?? []} activityUuid={story.uuid} />

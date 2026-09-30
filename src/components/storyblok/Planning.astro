@@ -299,6 +299,7 @@ const bookJs = (s: (typeof sessions)[number], label: string) =>
           <div
             class:list={["week-col", { "is-today": d.isToday }]}
             style={`--grid-h:${hours.length * 4}rem`}
+            data-day={d.key}
           >
             {d.sessions.map((s) => {
               const left = remaining(s);
@@ -445,6 +446,18 @@ const bookJs = (s: (typeof sessions)[number], label: string) =>
     relayoutVisibleWeek();
   };
   showWeek(0);
+
+  // Deep link (?date=AAAA-MM-JJ, e.g. from an activity card): open the
+  // 4-day page containing that day instead of the first page.
+  const deepDate = new URLSearchParams(location.search).get("date");
+  if (deepDate && /^\d{4}-\d{2}-\d{2}$/.test(deepDate)) {
+    const col = document.querySelector<HTMLElement>(`.week-col[data-day="${deepDate}"]`);
+    const page = col?.closest<HTMLElement>("[data-page]");
+    if (page) {
+      const idx = weeks.indexOf(page);
+      if (idx > 0) showWeek(idx);
+    }
+  }
 
   document.querySelectorAll<HTMLElement>("[data-page-nav]").forEach((btn) => {
     btn.addEventListener("click", () => {

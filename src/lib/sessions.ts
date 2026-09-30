@@ -274,6 +274,15 @@ export interface SessionTiming {
   duration?: string;
 }
 
+/** Calendar day (`AAAA-MM-JJ`, Paris time) of a session start — used for
+ * deep links into the planning (`/programme-du-mois?date=…`). */
+export function sessionDayKey(start: string | undefined): string | undefined {
+  if (!start) return undefined;
+  const d = new Date(start);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toLocaleDateString("en-CA", { timeZone: TZ });
+}
+
 export function sessionTiming(
   start: string | undefined,
   minutes: number,
