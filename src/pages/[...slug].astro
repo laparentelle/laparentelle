@@ -18,6 +18,11 @@ try {
 if (!story) return new Response(null, { status: 404 });
 
 const content = story.content;
+// Session stories live under seances/ and are only rendered through the
+// planning / activity pages — never as standalone pages.
+if ((slug ?? "").startsWith("seances/") || content.component === "session") {
+  return new Response(null, { status: 404 });
+}
 // A person can exist without a public page (page_enabled === false).
 if (content.component === "person" && content.page_enabled === false) {
   return new Response(null, { status: 404 });
@@ -31,7 +36,7 @@ const title = content.seo_title ?? content.name ?? story.name;
   {content.component === "person" ? (
     <Person blok={content} tags={story.tag_list ?? []} />
   ) : content.component === "activity_page" ? (
-    <ActivityPage blok={content} tags={story.tag_list ?? []} />
+    <ActivityPage blok={content} tags={story.tag_list ?? []} activityUuid={story.uuid} />
   ) : (
     <StoryblokComponent blok={content} />
   )}

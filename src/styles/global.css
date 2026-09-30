@@ -38,6 +38,12 @@ main > :not(.hero-blok) {
   border-bottom: 1px solid var(--c-line);
 }
 
+/* The booking dialog is intentionally flat: no blur behind it either */
+body:has(dialog[open]) .site-header {
+  backdrop-filter: none;
+  background: var(--c-cream);
+}
+
 .header-inner {
   display: flex;
   align-items: center;

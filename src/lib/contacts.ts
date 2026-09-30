@@ -36,7 +36,7 @@ export async function getContactRecipients(): Promise<Recipient[]> {
         (s) =>
           s.content?.component === "person" &&
           s.content?.email &&
-          s.content?.visible_in_list !== false,
+          s.content?.page_enabled !== false,
       )
       .map((s) => ({ name: s.content.name as string, email: s.content.email as string }))
       .sort((a, b) => a.name.localeCompare(b.name, "fr"));

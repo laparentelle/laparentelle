@@ -2,6 +2,12 @@
 import { storyblokEditable, renderRichText } from "@storyblok/astro";
 import { imgSrc, imgAlt } from "../../lib/links";
 import Button from "../Button.astro";
+import {
+  fetchSessionsByActivity,
+  fetchPractitioners,
+  sessionTiming,
+} from "../../lib/sessions";
+import { countBookingsBulk, isBookingsConfigured } from "../../lib/bookings";
 
 interface Props {
   blok: {
@@ -17,15 +23,42 @@ interface Props {
     description?: any;
   };
   tags?: string[];
+  /** UUID of the `activity_page` story: used to find linked sessions. */
+  activityUuid?: string;
 }
 
-const { blok, tags = [] } = Astro.props;
+const { blok, tags = [], activityUuid = "" } = Astro.props;
 const description = blok.description ? renderRichText(blok.description) : "";
 const src = imgSrc(blok.image);
 const bookingHref =
   blok.booking_link?.cached_url || blok.booking_link?.url
     ? (blok.booking_link.url ?? `/${blok.booking_link.cached_url}`)
     : null;
+
+// Upcoming planning sessions linked to this activity page.
+const bookingsOn = isBookingsConfigured();
+const upcoming = await fetchSessionsByActivity(activityUuid);
+const peopleByUuid = new Map<string, string>();
+try {
+  const uuids = upcoming.flatMap((s) => s.people ?? []);
+  for (const [uuid, p] of await fetchPractitioners(uuids)) {
+    peopleByUuid.set(uuid, p.name);
+  }
+} catch {
+  /* practitioner names are a nice-to-have here */
+}
+let upcomingCounts: Record<string, number> = {};
+if (bookingsOn && upcoming.length) {
+  try {
+    upcomingCounts = await countBookingsBulk(upcoming.map((s) => s.uid));
+  } catch {
+    upcomingCounts = {};
+  }
+}
+const upcomingLeft = (uid: string, capacity?: number) => {
+  if (!bookingsOn || !capacity) return null;
+  return Math.max(0, capacity - (upcomingCounts[uid] ?? 0));
+};
 ---
 
 <article class="activity-page" {...storyblokEditable(blok)}>
@@ -57,6 +90,37 @@ const bookingHref =
       <h2>Jours & tarifs</h2>
       {blok.schedule && <p class="pre">{blok.schedule}</p>}
       {blok.price && <p class="pre">{blok.price}</p>}
+    </section>
+  )}
+
+  {upcoming.length > 0 && (
+    <section class="activity-block">
+      <h2>Prochains créneaux</h2>
+      <ul class="slot-list">
+        {upcoming.slice(0, 6).map((s) => {
+          const timing = sessionTiming(s.start, s.duration ?? 60);
+          const left = upcomingLeft(s.uid, s.capacity);
+          const names = (s.people ?? [])
+            .map((uuid) => peopleByUuid.get(uuid))
+            .filter(Boolean)
+            .join(", ");
+          return (
+            <li class="slot-row">
+              <div>
+                <strong>{timing.date}</strong>
+                {timing.range && <span> · {timing.range}</span>}
+                {names && <span class="slot-who"> — {names}</span>}
+                {left !== null && (
+                  <span class="slot-spots">
+                    {" "}· {left === 0 ? "complet" : `${left} place${left > 1 ? "s" : ""}`}
+                  </span>
+                )}
+              </div>
+              <a class="slot-link" href="/programme-du-mois">Réserver</a>
+            </li>
+          );
+        })}
+      </ul>
     </section>
   )}
 
@@ -166,6 +230,45 @@ const bookingHref =
 
   .pre:last-child {
     margin-bottom: 0;
+  }
+
+  .slot-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+    max-width: 46rem;
+  }
+
+  .slot-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0.7rem 1rem;
+    border: 1px solid var(--c-line);
+    border-radius: 0.75rem;
+    background: #fff;
+  }
+
+  .slot-who,
+  .slot-spots {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .slot-link {
+    color: var(--c-pine);
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .slot-link:hover {
+    text-decoration: underline;
   }
 
   .activity-contact {

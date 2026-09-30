@@ -31,7 +31,7 @@ const members = ((data?.stories ?? []) as any[])
   .filter(
     (s) =>
       s.content?.component === "person" &&
-      s.content?.visible_in_list !== false,
+      s.content?.page_enabled !== false,
   )
   .map((s) => ({
     name: s.content?.name ?? s.name,

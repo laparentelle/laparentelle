@@ -1,0 +1,158 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Button from "../components/Button.astro";
+import {
+  CLIENT_CANCEL_DEADLINE_HOURS,
+  getCancellationContext,
+} from "../lib/cancellation";
+import { sessionTiming } from "../lib/sessions";
+
+const token = Astro.url.searchParams.get("token") ?? "";
+const context = await getCancellationContext(token, Astro.url.toString());
+const isStaff = context.actor === "staff";
+const timing = context.session
+  ? sessionTiming(context.session.start, context.session.duration ?? 60)
+  : undefined;
+const title = isStaff ? "Annuler une demande" : "Annuler ma demande";
+---
+
+<BaseLayout
+  title={`${title} | La Parent'Elle à Mazan`}
+  description="Annulation sécurisée d’une demande de réservation."
+  noindex
+>
+  <section class="cancel-page blok-section">
+    <p class="eyebrow">{isStaff ? "Espace praticien" : "Gestion de réservation"}</p>
+    <h1>{title}</h1>
+
+    {context.state !== "ok" || !context.booking || !context.session ? (
+      <>
+        <p class="section-intro">{context.message ?? "Lien d’annulation invalide."}</p>
+        <p class="cancel-actions">
+          <a href="/programme-du-mois">Retour au planning</a>
+          {" · "}
+          <a href="/contact">Nous contacter</a>
+        </p>
+      </>
+    ) : (
+      <>
+        <p class="section-intro">
+          {isStaff
+            ? "Vérifiez la demande ci-dessous avant de libérer définitivement la place."
+            : "Vous pouvez libérer votre place jusqu’à la limite indiquée ci-dessous."}
+        </p>
+
+        <div class="cancel-summary">
+          <h2>{context.session.title}</h2>
+          <p>
+            {timing?.date}
+            {timing?.range ? ` · ${timing.range}` : ""}
+            {timing?.duration ? ` (${timing.duration})` : ""}
+          </p>
+          {context.session.location && <p>Lieu : {context.session.location}</p>}
+          {context.session.practitioner && (
+            <p>Praticien·ne : {context.session.practitioner}</p>
+          )}
+          <p>Demandeur : {context.booking.name} · {context.booking.email}</p>
+          <p class="cancel-policy">
+            {isStaff
+              ? "En tant que praticien, cette annulation est possible à tout moment avant la séance."
+              : `Annulation possible jusqu’à ${CLIENT_CANCEL_DEADLINE_HOURS} heures avant la séance.`}
+          </p>
+        </div>
+
+        <form id="cancel-form" class="contact-form">
+          <input type="hidden" name="token" value={token} />
+          <label>
+            Motif d’annulation {isStaff ? "" : <span class="opt">(facultatif)</span>}
+            <textarea
+              name="reason"
+              rows="3"
+              maxlength="500"
+              required={context.reasonRequired}
+            />
+          </label>
+          <Button submit>Confirmer l’annulation</Button>
+          <p class="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </>
+    )}
+  </section>
+</BaseLayout>
+
+<script>
+  const form = document.getElementById("cancel-form") as HTMLFormElement | null;
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const status = form.querySelector(".form-status");
+    const data = Object.fromEntries(new FormData(form).entries());
+    if (status) status.textContent = "Annulation en cours…";
+
+    try {
+      const res = await fetch("/api/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Erreur");
+
+      form.hidden = true;
+      if (status) {
+        let message = json.already
+          ? "Cette demande était déjà annulée."
+          : "Demande annulée. La place est de nouveau disponible.";
+        if (json.notifications === "failed") {
+          message += " Les e-mails automatiques n’ont pas pu être envoyés : contactez l’autre partie si nécessaire.";
+        } else if (json.notifications === "skipped") {
+          message += " Les e-mails automatiques sont momentanément indisponibles.";
+        }
+        status.textContent = message;
+      }
+    } catch (err) {
+      if (status) {
+        status.textContent =
+          err instanceof Error ? err.message : "Une erreur est survenue.";
+      }
+    }
+  });
+</script>
+
+<style>
+  .cancel-page {
+    max-width: 44rem;
+  }
+
+  .cancel-summary {
+    margin: 1.5rem 0 2rem;
+    padding: 1.5rem 1.75rem;
+    border: 1px solid var(--c-line);
+    border-radius: 0.75rem;
+    background: #fff;
+    box-shadow: 0 1px 2px rgb(32 59 52 / 0.08);
+  }
+
+  .cancel-summary h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.4rem;
+  }
+
+  .cancel-summary p {
+    margin: 0.25rem 0;
+  }
+
+  .cancel-policy {
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .cancel-actions a {
+    color: var(--c-pine);
+  }
+
+  #cancel-form {
+    margin-block: 0 0;
+  }
+</style>

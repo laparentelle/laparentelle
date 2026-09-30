@@ -1,6 +1,8 @@
 ---
 import { storyblokEditable, useStoryblokApi } from "@storyblok/astro";
 import { imgSrc, imgAlt } from "../../lib/links";
+import { fetchAllSessionStories, sessionTiming } from "../../lib/sessions";
+import { countBookingsBulk, isBookingsConfigured } from "../../lib/bookings";
 
 interface Props {
   blok: {
@@ -29,6 +31,7 @@ const { data } = await api.get("cdn/stories", {
 const items = ((data?.stories ?? []) as any[])
   .filter((s) => s.content?.component === "activity_page")
   .map((s) => ({
+    uuid: s.uuid as string,
     title: s.content?.title ?? s.name,
     animator: s.content?.animator ?? "",
     photo: s.content?.photo ?? "",
@@ -36,6 +39,36 @@ const items = ((data?.stories ?? []) as any[])
     url: `/${s.full_slug}`,
   }))
   .sort((a, b) => a.title.localeCompare(b.title, "fr"));
+
+// Next upcoming planning session per activity page.
+const bookingsOn = isBookingsConfigured();
+const now = new Date();
+const nextByActivity = new Map<string, { label: string; left: number | null }>();
+try {
+  const allSessions = await fetchAllSessionStories();
+  let counts: Record<string, number> = {};
+  if (bookingsOn && allSessions.length) {
+    try {
+      counts = await countBookingsBulk(allSessions.map((s) => s.uid));
+    } catch {
+      counts = {};
+    }
+  }
+  for (const s of allSessions
+    .filter((s) => s.activity && s.start && new Date(s.start) >= now)
+    .sort((a, b) => (a.start as string).localeCompare(b.start as string))) {
+    if (nextByActivity.has(s.activity as string)) continue;
+    const timing = sessionTiming(s.start, s.duration ?? 60);
+    const left =
+      bookingsOn && s.capacity ? Math.max(0, s.capacity - (counts[s.uid] ?? 0)) : null;
+    nextByActivity.set(s.activity as string, {
+      label: `${timing.date}${timing.range ? ` · ${timing.range}` : ""}`,
+      left,
+    });
+  }
+} catch {
+  /* next-session hints are a nice-to-have */
+}
 ---
 
 <section class="catalog-blok blok-section" {...storyblokEditable(blok)}>
@@ -51,7 +84,9 @@ const items = ((data?.stories ?? []) as any[])
   </div>
 
   <div class="catalog-grid" data-catalog-grid>
-    {items.map((it) => (
+    {items.map((it) => {
+      const next = nextByActivity.get(it.uuid);
+      return (
       <a class="catalog-card" href={it.url} data-tags={it.tags.map((t) => t.toLowerCase()).join("|")}>
         {imgSrc(it.photo) && (
           <img class="catalog-photo" src={imgSrc(it.photo)} alt={imgAlt(typeof it.photo === "string" ? null : it.photo, it.title)} loading="lazy" />
@@ -59,12 +94,19 @@ const items = ((data?.stories ?? []) as any[])
         <span class="catalog-body">
           <strong class="catalog-title">{it.title}</strong>
           {it.animator && <span class="catalog-animator">{it.animator}</span>}
+          {next && (
+            <span class="catalog-next">
+              Prochain créneau : {next.label}
+              {next.left !== null && ` · ${next.left === 0 ? "complet" : `${next.left} pl.`}`}
+            </span>
+          )}
           {it.tags.length > 0 && (
             <span class="catalog-tags">{it.tags.join(" · ")}</span>
           )}
         </span>
       </a>
-    ))}
+      );
+    })}
   </div>
   {items.length === 0 && (
     <p class="section-intro">Le programme arrive bientôt.</p>
@@ -163,6 +205,11 @@ const items = ((data?.stories ?? []) as any[])
   .catalog-animator {
     color: var(--c-pine-soft);
     font-size: 0.92rem;
+  }
+
+  .catalog-next {
+    color: var(--c-pine);
+    font-size: 0.85rem;
   }
 
   .catalog-tags {

@@ -2,6 +2,7 @@
 import { storyblokEditable } from "@storyblok/astro";
 import { resolveLink, imgSrc, imgAlt } from "../../lib/links";
 import Button from "../Button.astro";
+import { fetchSessionsByActivity, sessionTiming } from "../../lib/sessions";
 
 interface Props {
   blok: {
@@ -14,11 +15,19 @@ interface Props {
     member_price?: string;
     booking_label?: string;
     booking_link?: any;
+    /** Linked `activity_page` story UUID: shows the next session slot. */
+    activity_page?: string;
   };
 }
 
 const { blok } = Astro.props;
 const src = imgSrc(blok.image);
+const nextSession = (await fetchSessionsByActivity(
+  typeof blok.activity_page === "string" ? blok.activity_page : "",
+))[0];
+const nextTiming = nextSession
+  ? sessionTiming(nextSession.start, nextSession.duration ?? 60)
+  : undefined;
 ---
 
 <article class="activity" {...storyblokEditable(blok)}>
@@ -31,6 +40,12 @@ const src = imgSrc(blok.image);
     {(blok.duration || blok.practitioner) && (
       <p class="activity-meta">
         {[blok.duration, blok.practitioner].filter(Boolean).join(" · ")}
+      </p>
+    )}
+    {nextTiming?.date && (
+      <p class="activity-next">
+        Prochain créneau : {nextTiming.date}
+        {nextTiming.range && ` · ${nextTiming.range}`}
       </p>
     )}
     {(blok.price || blok.member_price) && (
@@ -81,6 +96,12 @@ const src = imgSrc(blok.image);
     margin: 0;
     color: var(--muted);
     font-size: 0.9rem;
+  }
+
+  .activity-next {
+    margin: 0;
+    color: var(--c-pine);
+    font-size: 0.85rem;
   }
 
   .activity-prices {
