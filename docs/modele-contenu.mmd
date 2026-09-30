@@ -1,0 +1,37 @@
+%% Modèle de contenu — La Parent'elle
+%% Les flèches indiquent « référence / lit / affiche ».
+flowchart TB
+  subgraph SB["Storyblok — contenu"]
+    direction TB
+    G["⚙️ global — réglages du site"]
+    PG["📄 pages — home, à-propos…"]
+    PL["📅 programme-du-mois — liste de références"]
+    CA["🧩 activity — carte d'accueil"]
+    S["🗓️ session — créneau (clé résa = UUID)"]
+    AP["🏷️ activity_page — page d'activité"]
+    P["🧑‍⚕️ person — fiche praticien·ne"]
+  end
+
+  subgraph SITE["Site Astro"]
+    direction TB
+    PREV["Aperçus éditeur — /global, /seances/…"]
+    BL["BaseLayout — menu, footer, SEO, couleurs"]
+    PAG["Pages publiques"]
+  end
+
+  DB[("Supabase — bookings")]
+  MAIL["Resend — e-mails"]
+
+  PL -- "références" --> S
+  CA -- "séance" --> S
+  S -- "activité" --> AP
+  AP -- "prochains créneaux" --> S
+  S -- "praticien·ne·s" --> P
+  BL -- "lit" --> G
+  PAG -- "affiche" --> S
+  PAG -- "affiche" --> AP
+  PAG -- "affiche" --> P
+  G -. "doc preview" .-> PREV
+  S -. "doc preview" .-> PREV
+  PAG -- "réservations" --> DB
+  DB -- "notifications" --> MAIL

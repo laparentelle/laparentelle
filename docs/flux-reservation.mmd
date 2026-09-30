@@ -1,0 +1,31 @@
+%% Réservation & annulation — La Parent'elle
+sequenceDiagram
+  autonumber
+  actor V as Visiteur
+  participant P as Planning
+  participant A as API Astro
+  participant BDD as Supabase
+  participant M as Resend
+  actor PR as Praticien·ne
+
+  Note over V,PR: Réservation
+  V ->> P: Choisit un créneau
+  P ->> V: Dialogue (nom, e-mail…)
+  V ->> A: POST /api/book
+  A ->> BDD: Places restantes ?
+  BDD -->> A: OK
+  A ->> BDD: Enregistre la réservation
+  A ->> M: E-mail praticien·ne (+ lien d'annulation staff)
+  A ->> M: E-mail client (+ .ics + lien d'annulation)
+  M -->> PR: Demande reçue 📩
+  M -->> V: Confirmation 📩
+
+  Note over V,PR: Annulation (lien du mail)
+  V ->> P: Ouvre /annulation?token=… (ou PR)
+  P ->> V: Page de confirmation
+  V ->> A: POST /api/cancel
+  A ->> BDD: Annulation douce (statut = annulé)
+  A ->> M: E-mail praticien·ne (+ .ics d'annulation)
+  A ->> M: E-mail client (+ .ics d'annulation)
+  M -->> PR: Annulation 📩
+  M -->> V: Annulation 📩
