@@ -5,6 +5,8 @@ import Person from "../components/storyblok/Person.astro";
 import ActivityPage from "../components/storyblok/ActivityPage.astro";
 import GlobalDoc from "../components/storyblok/GlobalDoc.astro";
 import { getPageStory } from "../lib/storyblok";
+import { seoPropsFrom } from "../lib/seo";
+import type { Crumb } from "../lib/seo";
 
 export const prerender = false;
 
@@ -37,13 +39,42 @@ if (content.component === "person" && content.page_enabled === false) {
 // Story tags (used for filtering) live on the story, not in content:
 // pass them explicitly to the person template.
 const title = content.seo_title ?? content.name ?? story.name;
+// Editor-controlled SEO fields (robots, share image, canonical, schema).
+const seo = seoPropsFrom(content);
+
+// Breadcrumbs help search engines show a richer result path. The trail
+// always ends on the current page.
+const currentUrl = "/" + slug;
+const pageName = content.seo_title ?? content.name ?? story.name;
+const trail: Crumb[] = [{ name: "Accueil", href: "/" }];
+if (content.component === "person" && (slug ?? "").startsWith("equipe/")) {
+  trail.push({ name: "Notre équipe", href: "/equipe" });
+} else if (
+  content.component === "activity_page" &&
+  (slug ?? "").startsWith("activites/")
+) {
+  trail.push({ name: "Activités", href: "/activites" });
+}
+if (slug !== "equipe" && slug !== "activites") {
+  trail.push({ name: pageName, href: currentUrl });
+}
 ---
 
-<BaseLayout title={title} description={content.seo_description} noindex={isGlobalDoc}>
+<BaseLayout
+  title={title}
+  description={content.seo_description}
+  noindex={isGlobalDoc}
+  robots={seo.robots}
+  image={seo.image}
+  ogType={seo.ogType}
+  canonical={seo.canonical}
+  schema={seo.schema}
+  breadcrumbs={trail}
+>
   {isGlobalDoc ? (
     <GlobalDoc story={story} />
   ) : content.component === "person" ? (
-    <Person blok={content} tags={story.tag_list ?? []} />
+    <Person blok={content} tags={story.tag_list ?? []} pageUrl={"/" + slug} />
   ) : content.component === "activity_page" ? (
     <ActivityPage blok={content} tags={story.tag_list ?? []} activityUuid={story.uuid} />
   ) : (

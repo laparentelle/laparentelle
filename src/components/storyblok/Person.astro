@@ -2,6 +2,14 @@
 import { storyblokEditable, renderRichText } from "@storyblok/astro";
 import { imgSrc, imgAlt } from "../../lib/links";
 import { adminEmail } from "../../lib/contacts";
+import { getGlobalStory } from "../../lib/storyblok";
+import {
+  absoluteUrl,
+  jsonLd,
+  personSchema,
+  siteInfoFromGlobal,
+  siteOrigin,
+} from "../../lib/seo";
 import Button from "../Button.astro";
 import ContactForm from "../ContactForm.astro";
 
@@ -20,9 +28,40 @@ interface Props {
     tarifs?: any;
   };
   tags?: string[];
+  /** Public URL of this page (e.g. "/equipe/laura-gleizes"). */
+  pageUrl?: string;
 }
 
-const { blok, tags = [] } = Astro.props;
+const { blok, tags = [], pageUrl = "" } = Astro.props;
+const origin = siteOrigin(Astro.url, Astro.site);
+const site = siteInfoFromGlobal(
+  origin,
+  (await getGlobalStory())?.content,
+  "La Parent'elle",
+);
+const personNode =
+  blok.name != null && String(blok.name).trim()
+    ? personSchema(site, {
+        name: String(blok.name).trim(),
+        url: pageUrl || undefined,
+        jobTitle:
+          typeof blok.role === "string" && blok.role.trim()
+            ? blok.role.trim()
+            : undefined,
+        image: imgSrc(blok.photo)
+          ? absoluteUrl(origin, imgSrc(blok.photo))
+          : undefined,
+        email:
+          typeof blok.email === "string" && blok.email.trim()
+            ? blok.email.trim()
+            : undefined,
+        phone:
+          typeof blok.phone === "string" && blok.phone.trim()
+            ? blok.phone.trim()
+            : undefined,
+        knowsAbout: tags.length > 0 ? tags : undefined,
+      })
+    : null;
 const bio = blok.bio ? renderRichText(blok.bio) : "";
 const prestations = blok.prestations ? renderRichText(blok.prestations) : "";
 const tarifs = blok.tarifs ? renderRichText(blok.tarifs) : "";
@@ -104,6 +143,12 @@ const bookingHref =
   <p class="back">
     <a href="/equipe">← Toute l'équipe</a>
   </p>
+  {personNode && (
+    <script
+      type="application/ld+json"
+      set:html={jsonLd({ "@context": "https://schema.org", ...personNode })}
+    />
+  )}
 </article>
 
 <style>

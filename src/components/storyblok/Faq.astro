@@ -1,6 +1,7 @@
 ---
 import { storyblokEditable } from "@storyblok/astro";
 import StoryblokComponent from "@storyblok/astro/StoryblokComponent.astro";
+import { faqPageSchema, jsonLd, richtextToText, squashWhitespace } from "../../lib/seo";
 
 interface Props {
   blok: {
@@ -12,6 +13,15 @@ interface Props {
 }
 
 const { blok } = Astro.props;
+
+// FAQPage schema, generated from the visible questions. Answers are
+// richtext: strip the markup, schema text must be plain.
+const faqNode = faqPageSchema(
+  (blok.items ?? []).map((item) => ({
+    question: typeof item?.question === "string" ? item.question : "",
+    answer: squashWhitespace(richtextToText(item?.answer)),
+  })),
+);
 ---
 
 <section class="faq-blok blok-section" {...storyblokEditable(blok)}>
@@ -23,6 +33,12 @@ const { blok } = Astro.props;
       <StoryblokComponent blok={item} />
     ))}
   </div>
+  {faqNode && (
+    <script
+      type="application/ld+json"
+      set:html={jsonLd({ "@context": "https://schema.org", ...faqNode })}
+    />
+  )}
 </section>
 
 <style>

@@ -1,0 +1,1812 @@
+---
+/**
+ * Guide de l'éditeur — documentation interne, en français, pour les
+ * personnes qui CONTENTS le site dans Storyblok. Aucune notion technique :
+ * uniquement « où cliquer, quoi écrire, ce que ça change ».
+ *
+ * Rendue par /guide (src/pages/guide.astro), qui n'existe qu'en
+ * développement / preview (IS_PREVIEW=true) et répond 404 en production.
+ */
+import planning from "../assets/guide/planning.webp";
+import apercuSeance from "../assets/guide/apercu-seance.webp";
+import dialogueReservation from "../assets/guide/dialogue-reservation.webp";
+import dialogueExterne from "../assets/guide/dialogue-externe.webp";
+import accueilActivites from "../assets/guide/accueil-activites.webp";
+import equipe from "../assets/guide/equipe.webp";
+import personne from "../assets/guide/personne.webp";
+import personneReserver from "../assets/guide/personne-reserver.webp";
+import activitePage from "../assets/guide/activite-page.webp";
+import activitesCatalogue from "../assets/guide/activites-catalogue.webp";
+import activitesFiltreSport from "../assets/guide/activites-filtre-sport.webp";
+import contact from "../assets/guide/contact.webp";
+import mobilePlanning from "../assets/guide/mobile-planning.webp";
+import mobileEquipe from "../assets/guide/mobile-equipe.webp";
+import schemaContenu from "../assets/guide/schema-contenu.webp";
+import fluxReservation from "../assets/guide/flux-reservation.webp";
+
+const SECTIONS = [
+  { id: "demarrer", label: "Démarrer" },
+  { id: "ou-se-trouve-quoi", label: "Où se trouve quoi" },
+  { id: "je-veux", label: "« Je veux… »" },
+  { id: "seances", label: "Les séances" },
+  { id: "planning", label: "Le planning" },
+  { id: "equipe", label: "L’équipe" },
+  { id: "activites", label: "Les activités" },
+  { id: "accueil", label: "La page d’accueil" },
+  { id: "contact", label: "Le formulaire de contact" },
+  { id: "reglages", label: "Menu, pied de page, couleurs" },
+  { id: "pieges", label: "Pièges & dépannage" },
+  { id: "checklist", label: "Vérifier avant de publier" },
+  { id: "referencement", label: "Référencement" },
+];
+
+---
+
+<article class="guide">
+  <header class="guide-head">
+    <p class="eyebrow">Documentation interne — page non publique</p>
+    <h1>Guide de l’éditeur</h1>
+    <p class="lead">
+      Ce guide explique <strong>où modifier quoi</strong> dans Storyblok pour que
+      le site reste cohérent. Il s’adresse aux personnes qui rédigent le
+      contenu : pas de code, pas de termes techniques.
+    </p>
+    <p class="guide-meta">
+      Version du site&nbsp;: <strong>1er octobre 2026</strong> · 90 séances ·
+      16 professionnelles · 17 activités
+    </p>
+  </header>
+
+  <div class="guide-body">
+    <nav class="guide-toc" aria-label="Sommaire du guide">
+    <p class="toc-title">Sommaire</p>
+    <ol>
+      {
+        SECTIONS.map((s) => (
+          <li>
+            <a href={`#${s.id}`}>{s.label}</a>
+          </li>
+        ))
+      }
+    </ol>
+    <p class="toc-note">
+      Cette page n’existe pas en ligne&nbsp;: elle est disponible uniquement
+      sur le domaine de <em>preview</em> et dans le Visual Editor.
+    </p>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════ 1. DÉMARRER ══ -->
+  <section id="demarrer" class="guide-section">
+    <h2><span class="num">1</span> Démarrer</h2>
+
+    <p>
+      Tout le contenu du site vit dans Storyblok. Le site est ensuite généré à
+      partir de ces contenus. Concrètement&nbsp;: <strong>ce que vous ne
+      publiez pas n’existe pas en ligne</strong>.
+    </p>
+
+    <div class="card gold">
+      <h3>Les 4 gestes qui évitent 90 % des erreurs</h3>
+      <ol class="checklist">
+        <li>
+          <strong>Toujours publier.</strong> Écrire dans Storyblok ne change rien
+          au site tant que vous n’avez pas cliqué sur <em>Publier</em>. En
+          preview, les brouillons sont visibles immédiatement&nbsp;; en ligne,
+          seuls les contenus publiés le sont.
+        </li>
+        <li>
+          <strong>Regarder le résultat, pas seulement les champs.</strong> Une
+          une fiche n’est pas une page&nbsp;: une séance n’apparaît sur le site
+          que si elle est <em><em>ajoutée au planning</em></em>.
+        </li>
+        <li>
+          <strong>Ne jamais réécrire un identifiant.</strong> Chaque contenu
+          possède un identifiant interne (UUID) invisible qui sert de clé de
+          réservation. Il ne se modifie pas et ne doit jamais être recopié à la
+          main.
+        </li>
+        <li>
+          <strong>Laisser un contenu en brouillon plutôt que le supprimer.</strong>
+          Une séance contient les réservations déjà prises&nbsp;: la supprimer
+          ferait perdre l’historique.
+        </li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h3>Prévisualiser avant de publier</h3>
+      <p>
+        Dans Storyblok, le bouton <em>Visual Editor</em> ouvre le site en
+        aperçu. Les modifications non publiées sont visibles sur le domaine de
+        preview uniquement. Trois pages vous aident&nbsp;:
+      </p>
+      <ul class="urls">
+        <li><code>/seances/nom-de-la-seance</code> — la fiche de contrôle d’une séance</li>
+        <li><code>/global</code> — l’état des réglages du site</li>
+        <li><code>/guide</code> — ce guide</li>
+      </ul>
+      <p class="muted">
+        Ces trois pages n’existent pas en ligne&nbsp;: elles renvoient une
+        erreur 404 en production.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════ 2. OÙ SE TROUVE QUOI ══ -->
+  <section id="ou-se-trouve-quoi" class="guide-section">
+    <h2><span class="num">2</span> Où se trouve quoi</h2>
+
+    <p>
+      Dans le menu de gauche de Storyblok, tout le site tient en quatre dossiers
+      et quelques pages à la racine. Voici le plan complet.
+    </p>
+
+    <figure class="fig">
+      <img src={schemaContenu.src} alt="Schéma du modèle de contenu Storyblok et de ses relations" loading="lazy" />
+      <figcaption>
+        Schéma de synthèse&nbsp;: ce que chaque dossier contient et ce que le
+        site en fait.
+      </figcaption>
+    </figure>
+
+    <div class="table-scroll"><table class="ref">
+      <caption>Les emplacements Storyblok</caption>
+      <thead>
+        <tr>
+          <th>Emplacement</th>
+          <th>Ce qu’on y met</th>
+          <th>Ce que ça donne sur le site</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>global</code></td>
+          <td>Nom du site, logo, menu, pied de page, couleurs, SEO</td>
+          <td>Présent sur <em>toutes</em> les pages</td>
+        </tr>
+        <tr>
+          <td>Pages à la racine<br /><span class="muted">accueil, à propos, contact, maternité, féminité, parentalité, programme du mois</span></td>
+          <td>Des blocs de contenu, du texte, des images</td>
+          <td>Une page du site par story</td>
+        </tr>
+        <tr>
+          <td><code>equipe/</code></td>
+          <td>Une story par professionnelle ou intervenant</td>
+          <td>La page <code>/equipe</code> et les fiches individuelles</td>
+        </tr>
+        <tr>
+          <td><code>seances/</code></td>
+          <td>Une story par date et par prestation</td>
+          <td>Le planning, les pages d’activités, les cartes de l’accueil</td>
+        </tr>
+        <tr>
+          <td><code>activites/</code></td>
+          <td>Une story par activité (Yoga doux, Café des parents…)</td>
+          <td>Le catalogue <code>/activites</code> et les pages d’activité</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="card gold">
+      <h3>La règle qui surprend le plus souvent</h3>
+      <p>
+        <strong>Créer une séance ne l’affiche pas.</strong> Une séance est un
+        contenu invisible par lui-même. Elle n’apparaît que si vous la
+        <em>référencez</em> dans le bloc <em>Planning</em> de la page
+        <code>programme-du-mois</code>. C’est l’équivalent d’un carnet de
+        rendez-vous&nbsp;: la séance existe, mais sans la ligne dans le
+        carnet, personne ne la voit.
+      </p>
+      <p>
+        <a href="#planning">→ Voir la procédure complète dans « Le planning »</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ 3. JE VEUX… ══ -->
+  <section id="je-veux" class="guide-section">
+    <h2><span class="num">3</span> « Je veux… »</h2>
+    <p>
+      Le point d’entrée le plus rapide&nbsp;: trouvez votre intention, la ligne
+      vous dit où aller.
+    </p>
+
+    <div class="table-scroll"><table class="ref ref-lookup">
+      <caption>Index des tâches courantes</caption>
+      <thead>
+        <tr>
+          <th>Je veux…</th>
+          <th>Où le faire</th>
+          <th>Le point d’attention</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Modifier un texte de l’accueil</td>
+          <td>Story <code>home</code> → double-clic sur la zone de texte</td>
+          <td>Le Visual Editor écrase parfois la mise en forme&nbsp;: utilisez <em>Annuler</em> (Ctrl+Z)</td>
+        </tr>
+        <tr>
+          <td>Changer un visuel</td>
+          <td>L’image du bloc concerné</td>
+          <td>Remplacer l’image, pas la supprimer&nbsp;: une image vide déforme la mise en page</td>
+        </tr>
+        <tr>
+          <td>Ajouter une page (sur une nouvelle URL)</td>
+          <td>Créer une story dans le dossier voulu avec le bon modèle</td>
+          <td>Le <em>dossier</em> et le <em>modèle</em> décident de l’URL et de la mise en page</td>
+        </tr>
+        <tr>
+          <td>Ajouter une séance</td>
+          <td><a href="#seances">Créer dans <code>seances/</code></a> puis <a href="#planning">référencer dans <code>programme-du-mois</code></a></td>
+          <td>Les deux étapes sont obligatoires</td>
+        </tr>
+        <tr>
+          <td>Déplacer une séance ou la reprogrammer</td>
+          <td>La story elle-même, dans <code>seances/</code></td>
+          <td>Modifiez la story, jamais la référence&nbsp;: l’identifiant doit rester le même</td>
+        </tr>
+        <tr>
+          <td>Ajouter une professionnelle</td>
+          <td><a href="#equipe">Créer dans <code>equipe/</code></a></td>
+          <td>Renseigner l’e-mail&nbsp;: c’est là que ses demandes de rendez-vous arrivent</td>
+        </tr>
+        <tr>
+          <td>Retirer quelqu·e de l’équipe sans supprimer sa page</td>
+          <td>Décocher <em>Page active</em></td>
+          <td>Les réservations déjà prises sont conservées</td>
+        </tr>
+        <tr>
+          <td>Ajouter une activité</td>
+          <td><a href="#activites">Créer dans <code>activites/</code></a></td>
+          <td>Ajouter une étiquette <em>Atelier</em> pour qu’elle apparaisse dans le filtre</td>
+        </tr>
+        <tr>
+          <td>Changer le prix d’une prestation</td>
+          <td>Champ <em>Tarifs</em> de la fiche professionnelle ou de l’activité</td>
+          <td>Ce sont deux champs distincts&nbsp;: vérifiez la bonne fiche</td>
+        </tr>
+        <tr>
+          <td>Changer un menu, un lien, une couleur</td>
+          <td>Story <code>global</code></td>
+          <td>Une seule story pour tout le site&nbsp;: vérifiez <a href="/global">l’aperçu</a></td>
+        </tr>
+        <tr>
+          <td>Modifier l’adresse ou le téléphone</td>
+          <td><code>global</code> (affichage général) <em>et</em> le bloc <em>Contact</em> de la page</td>
+          <td>Les deux existent&nbsp;: il faut aussi modifier le bloc de la page concernée</td>
+        </tr>
+        <tr>
+          <td>Changer le destinataire d’un formulaire</td>
+          <td><a href="#contact">Le bloc <em>Contact</em> de la page</a></td>
+          <td>La liste déroulante se construit toute seule depuis <code>equipe/</code></td>
+        </tr>
+        <tr>
+          <td>Mettre une page hors ligne</td>
+          <td>Ne pas publier la story</td>
+          <td>Une story non publiée renvoie une erreur 404&nbsp;: vérifiez le lien</td>
+        </tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════ 4. SÉANCES ══ -->
+  <section id="seances" class="guide-section">
+    <h2><span class="num">4</span> Les séances</h2>
+    <p>
+      C’est le contenu le plus important du site&nbsp;: tout le planning, les
+      pages d’activités et les cartes de l’accueil en dépendent. Une séance, ce
+      est <strong>une date + une heure + une prestation</strong>.
+    </p>
+
+    <h3>Les champs, un par un</h3>
+    <div class="table-scroll"><table class="ref">
+      <thead>
+        <tr>
+          <th>Champ</th>
+          <th>Ce que vous mettez</th>
+          <th>Ce que ça change sur le site</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Titre</strong></td>
+          <td>«&nbsp;Face Yoga&nbsp;», «&nbsp;Ateliers parents-enfants&nbsp;»…</td>
+          <td>Le nom affiché dans le planning, sur la page d’activité et sur les cartes de l’accueil</td>
+        </tr>
+        <tr>
+          <td><strong>Type</strong></td>
+          <td>Activité collective · Sport · Bien-être · Consultation</td>
+          <td>La <strong>couleur</strong> du créneau et le <strong>filtre</strong> correspondant en haut du planning</td>
+        </tr>
+        <tr>
+          <td><strong>Début</strong></td>
+          <td>La date et l’heure (voir <a href="#pieges">le piège des dates</a>)</td>
+          <td>Place la séance dans la bonne colonne du planning</td>
+        </tr>
+        <tr>
+          <td><strong>Durée (minutes)</strong></td>
+          <td><code>60</code> pour une heure</td>
+          <td>La hauteur du créneau et l’heure de fin affichée</td>
+        </tr>
+        <tr>
+          <td><strong>Places</strong></td>
+          <td>Le nombre de personnes acceptées&nbsp;: <code>1</code>, <code>8</code>, <code>15</code>…</td>
+          <td>Le compteur «&nbsp;8 pl.&nbsp;». Le nombre <strong>restant</strong> se déduit tout seul des réservations</td>
+        </tr>
+        <tr>
+          <td><strong>Praticien·ne(s)</strong></td>
+          <td>Une ou plusieurs fiches de <code>equipe/</code></td>
+          <td>Le nom sous le créneau <em>et</em> l’adresse à qui la demande de rendez-vous est envoyée</td>
+        </tr>
+        <tr>
+          <td><strong>Précisions</strong></td>
+          <td>Une info courte&nbsp;: «&nbsp;prévoir une tenue confortable&nbsp;»</td>
+          <td>Affichée dans la fiche mobile et la fenêtre de réservation</td>
+        </tr>
+        <tr>
+          <td><strong>Activité (page)</strong></td>
+          <td>Une fiche de <code>activites/</code></td>
+          <td>La séance apparaît dans les <em>Prochains créneaux</em> de cette page d’activité</td>
+        </tr>
+        <tr>
+          <td><strong>Réservation externe</strong></td>
+          <td>Case à cocher</td>
+          <td>Remplace le formulaire par un bouton <em>Réserver directement</em> vers la plateforme du professionnel</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <h3>La fiche de contrôle</h3>
+    <p>
+      Dès que vous ouvrez une séance, Storyblok affiche une page de
+      diagnostic. C’est votre meilleur réflexe&nbsp;: elle dit si la séance est
+      correctement branchée, et elle affiche le nombre de places déjà réservées.
+    </p>
+
+    <figure class="fig">
+      <img src={apercuSeance.src} alt="Aperçu éditeur d’une séance : type, places, praticienne, activité liée et présence dans le planning" loading="lazy" />
+      <ol class="marks">
+        {
+          [
+            "Le <strong>type</strong>&nbsp;: il détermine la couleur et le filtre du créneau.",
+            "Les <strong>places</strong> et le nombre de réservations déjà prises.",
+            "Les <strong>praticien·nes</strong>&nbsp;: c’est là que part la demande de rendez-vous. Un tiret indique qu’aucun professionnel n’est rattaché.",
+            "L’<strong>activité liée</strong>&nbsp;: la page où cette séance doit apparaître.",
+            "<strong>Dans le planning</strong>&nbsp;: «&nbsp;Non&nbsp;» signifie que la séance n’apparaîtra sur aucun créneau tant qu’elle n’est pas référencée.",
+            "L’<strong>identifiant de réservation</strong>&nbsp;: ne pas y toucher.",
+          ].map((t, i) => (
+            <li>
+              <span class="mark">{i + 1}</span>
+              <span set:html={t} />
+            </li>
+          ))
+        }
+      </ol>
+      <figcaption>
+        Aperçu d’une séance&nbsp;: type, capacité, rattachement à une
+        professionnelle, activité et présence dans le planning.
+      </figcaption>
+    </figure>
+
+    <h3>Créer une séance étape par étape</h3>
+    <ol class="steps">
+      <li>
+        Dans Storyblok, ouvrez le dossier <code>seances/</code> et créez un
+        nouveau contenu <em>Séance</em>. Le nom de la story n’est pas visible par
+        les visiteurs&nbsp;: utilisez un nom parlant et daté, par exemple
+        <code>2026-10-30-face-yoga</code>.
+      </li>
+      <li>
+        Remplissez <em>Titre</em>, <em>Type</em>, <em>Début</em>,
+        <em>Durée</em> et <em>Places</em>.
+      </li>
+      <li>
+        Rattachez <em>Praticien·ne(s)</em> à la ou aux fiches concernées dans
+        <code>equipe/</code>.
+      </li>
+      <li>
+        Si la séance est une version d’une activité déjà publiée, choisissez-la
+        dans <em>Activité (page)</em>.
+      </li>
+      <li>
+        <strong>Publiez la séance</strong>, puis ajoutez-la au planning&nbsp;: voir
+        <a href="#planning">la section suivante</a>.
+      </li>
+    </ol>
+
+    <div class="card gold">
+      <h3>Créer une séance récurrente</h3>
+      <p>
+        Il n’y a pas de récurrence automatique&nbsp;: une date = une story.
+        Pour un cours qui se répète, <strong>dupliquez</strong> la story
+        existante (menu <em>⋯</em> → <em>Dupliquer</em>), changez la date, puis
+        ajoutez-la au planning. Doubliser conserve le titre, le type, la durée,
+        les places, le professionnel et l’activité&nbsp;: il ne reste que la
+        date à corriger.
+      </p>
+      <p class="muted">
+        Attention&nbsp;: la story dupliquée a un nouvel identifiant, elle
+        n’hérite pas des réservations de la précédente.
+      </p>
+    </div>
+
+    <h3>Les deux façons de réserver</h3>
+    <div class="split">
+      <figure class="fig">
+        <img src={dialogueReservation.src} alt="Fenêtre de demande de réservation d’un créneau du planning" loading="lazy" />
+        <ol class="marks">
+          {
+            [
+              "Le nom de la séance et son créneau, repris de la story.",
+              "Ce que la visiteuse renseigne&nbsp;: son nom, son prénom, son e-mail, son téléphone (facultatif).",
+              "Le professionnel concerné, avec un lien vers sa fiche.",
+              "L’envoi de la demande&nbsp;: un accusé de réception part à la visiteuse, la demande part au professionnel.",
+            ].map((t, i) => (
+              <li>
+                <span class="mark">{i + 1}</span>
+                <span set:html={t} />
+              </li>
+            ))
+          }
+        </ol>
+        <figcaption>Réservation classique&nbsp;: le formulaire du planning.</figcaption>
+      </figure>
+
+      <figure class="fig">
+        <img src={dialogueExterne.src} alt="Fenêtre de réservation directe d’un créneau à réservation externe" loading="lazy" />
+        <ol class="marks">
+          {
+            [
+              "Ce créneau n’est pas réservable via le planning.",
+              "Un bouton unique renvoie vers la plateforme du professionnel ( Doctolib, Calendly, etc.).",
+            ].map((t, i) => (
+              <li>
+                <span class="mark">{i + 1}</span>
+                <span set:html={t} />
+              </li>
+            ))
+          }
+        </ol>
+        <figcaption>
+          Réservation externe&nbsp;: le bouton <em>Réserver directement</em>
+          remplace le formulaire.
+        </figcaption>
+      </figure>
+    </div>
+    <p class="muted">
+      Pour une réservation externe, le bouton renvoie vers le lien renseigné
+      dans <em>Bouton réservation (lien)</em> sur la fiche du professionnel.
+      S’il est vide, le bouton ouvre sa fiche&nbsp;; s’il n’y a pas de fiche
+      non plus, il ouvre le formulaire de contact.
+    </p>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ 5. PLANNING ══ -->
+  <section id="planning" class="guide-section">
+    <h2><span class="num">5</span> Le planning</h2>
+    <p>
+      Le planning est une page (<code>programme-du-mois</code>) qui contient un
+      bloc <em>Planning</em>. Ce bloc ne contient pas les séances&nbsp;: il
+      contient une <strong>liste de références</strong> vers les stories de
+      <code>seances/</code>, dans l’ordre d’affichage souhaité.
+    </p>
+
+    <figure class="fig">
+      <img src={planning.src} alt="Le planning du mois : filtres par type, légende des couleurs et quatre jours de créneaux" loading="lazy" />
+      <ol class="marks">
+        {
+          [
+            "Les filtres. Ils sont <strong>générés automatiquement</strong> d’après le champ <em>Type</em> des séances&nbsp;: aucun réglage à faire ici.",
+            "La légende des couleurs, dans le même ordre que les filtres.",
+            "La période affichée&nbsp;: quatre jours à la fois, avec les flèches pour défiler. Le planning ne montre que les <strong>30 prochains jours</strong>.",
+            "Une séance. Tout ce qui est affiché ici est repris de la story&nbsp;: l’heure, le titre, le professionnel.",
+            "Les places restantes. Le nombre saisi moins les réservations déjà prises&nbsp;: il se met à jour tout seul.",
+            "Cette flèche signale une <strong>réservation externe</strong>&nbsp;: cliquer ouvre un bouton de renvoi, pas un formulaire.",
+          ].map((t, i) => (
+            <li>
+              <span class="mark">{i + 1}</span>
+              <span set:html={t} />
+            </li>
+          ))
+        }
+      </ol>
+      <figcaption>
+        Le planning, tel qu’il apparaît pour les visiteuses&nbsp;: quatre jours
+        à la fois, un créneau par séance.
+      </figcaption>
+    </figure>
+
+    <h3>Ajouter une séance au planning</h3>
+    <ol class="steps">
+      <li>
+        Ouvrez la page <code>programme-du-mois</code> et passez en mode
+        prévisualisation pour trouver lablanc <em>Planning</em>.
+      </li>
+      <li>
+        Dans le champ <em>Séances</em>, cliquez sur <em>Ajouter</em>, puis
+        choisissez la story à insérer.
+      </li>
+      <li>
+        <strong>Remplacez</strong> (l’icône de poubelle) ne fait pas
+        supprimer la séance&nbsp;: cela enlève seulement la ligne du planning, et
+        la story reste éditorialisable.
+      </li>
+      <li>
+        Vérifiez le placement&nbsp;: l’ordre dans la liste détermine l’ordre
+        d’affichage à l’intérieur d’une journée.
+      </li>
+      <li>
+        <strong>Publiez la page</strong>. Tant que la page n’est pas publiée,
+        l’ajout n’apparaît pas sur le site en ligne.
+      </li>
+    </ol>
+
+    <div class="card gold">
+      <h3>Les questions fréquentes sur le planning</h3>
+      <dl class="faq">
+        <dt>Ma séance n’apparaît pas.</dt>
+        <dd>
+          Vérifiez dans l’ordre&nbsp;: <strong>(1)</strong> la séance
+          est-elle publiée&nbsp;? <strong>(2)</strong> est-elle référencée dans le
+          bloc <em>Planning</em>&nbsp;? <strong>(3)</strong> la date est-elle
+          dans les 30 prochains jours&nbsp;? <strong>(4)</strong> la page
+          <code>programme-du-mois</code> est-elle publiée&nbsp;?
+        </dd>
+        <dt>Elle apparaît mais dans la mauvaise colonne.</dt>
+        <dd>
+          La date de début est décalée. Vérifiez le fuseau dans
+          <a href="#pieges">« Pièges &amp; dépannage »</a>&nbsp;: une heure
+          saisie avec un décalage fait basculer la séance au jour suivant.
+        </dd>
+        <dt>Les places restantes ne changent pas.</dt>
+        <dd>
+          C’est normal&nbsp;: elles ne bougent que lorsqu’une réservation est
+          réellement envoyée. Vérifiez que le champ <em>Places</em> contient un
+          nombre, pas un texte.
+        </dd>
+        <dt>Le nom du professionnel n’apparaît pas.</dt>
+        <dd>
+          Soit la séance dure moins de 45 minutes&nbsp;: le nom s’affiche au
+          survol et au clavier. Soit <em>Praticien·ne(s)</em> est vide sur la
+          story&nbsp;: dans ce cas la demande part à l’adresse administrative.
+        </dd>
+        <dt>Je veux retirer une séance sans perdre les réservations.</dt>
+        <dd>
+          Retirez la référence dans le planning et laissez la story en
+          brouillon. Ne supprimez jamais la story&nbsp;: elle porte
+          l’historique.
+        </dd>
+      </dl>
+    </div>
+
+    <p class="muted">
+      Sur téléphone, le planning devient une liste par jour&nbsp;: c’est la même
+      donnée, mise en forme différemment.
+    </p>
+    <figure class="fig fig-mobile">
+      <img src={mobilePlanning.src} alt="Le planning du mois affiché sur téléphone" loading="lazy" />
+      <figcaption>Le planning sur téléphone.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════ 6. ÉQUIPE ══ -->
+  <section id="equipe" class="guide-section">
+    <h2><span class="num">6</span> L’équipe</h2>
+    <p>
+      Chaque personne qui intervient est une story dans <code>equipe/</code>.
+      Une story peut être <strong>une professionnelle avec une page</strong> ou
+      <strong>un intervenant invité que l’on ne présente pas</strong>&nbsp;: les
+      deux cas utilisent le même contenu, un seul interrupteur les distingue.
+    </p>
+
+    <figure class="fig">
+      <img src={equipe.src} alt="Page « Notre équipe » : filtres par pôle et fiches des professionnelles" loading="lazy" />
+      <ol class="marks">
+        {
+          [
+            "Les filtres par pôle. Ils sont construits à partir des <strong>étiquettes</strong> de chaque personne.",
+            "La photo. Le format «&nbsp;organique&nbsp» est automatique&nbsp;: ne recadrez pas l’image vous-même.",
+            "Le <strong>métier</strong>, affiché sous le nom sur la fiche et dans la liste.",
+            "Les <strong>étiquettes</strong> de la personne. Elles décident dans quels filtres elle apparaît.",
+          ].map((t, i) => (
+            <li>
+              <span class="mark">{i + 1}</span>
+              <span set:html={t} />
+            </li>
+          ))
+        }
+      </ol>
+      <figcaption>
+        La page <code>/equipe</code>&nbsp;: les filtres correspondent aux
+        étiquettes, pas à un réglage du site.
+      </figcaption>
+    </figure>
+
+    <h3>Les champs, un par un</h3>
+    <div class="table-scroll"><table class="ref">
+      <thead>
+        <tr>
+          <th>Champ</th>
+          <th>Ce que vous mettez</th>
+          <th>Ce que ça change sur le site</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Nom</strong></td>
+          <td>Le nom affiché, tel qu’il doit apparaître publiquement</td>
+          <td>Sur la fiche, dans le planning, dans la liste</td>
+        </tr>
+        <tr>
+          <td><strong>Métier</strong></td>
+          <td>«&nbsp;Professeure de yoga&nbsp;», «&nbsp;Doula&nbsp;»…</td>
+          <td>Sous le nom et dans le menu déroulant du formulaire de contact</td>
+        </tr>
+        <tr>
+          <td><strong>Photo</strong></td>
+          <td>Un portrait, de préférence vertical</td>
+          <td>La fiche et la carte de l’équipe</td>
+        </tr>
+        <tr>
+          <td><strong>E-mail</strong></td>
+          <td>L’adresse professionnelle qui reçoit les demandes</td>
+          <td><strong>Essentiel</strong>&nbsp;: c’est la destination des demandes de rendez-vous. Elle apparaît aussi dans la liste «&nbsp;Destinataire&nbsp;» du formulaire de contact</td>
+        </tr>
+        <tr>
+          <td><strong>Téléphone</strong></td>
+          <td>Un numéro d’appel</td>
+          <td>Sur la fiche et dans les coordonnées</td>
+        </tr>
+        <tr>
+          <td><strong>Bouton réservation</strong></td>
+          <td>Un libellé + un lien externe</td>
+          <td>Le bouton de prise de rendez-vous sur la fiche, et le bouton des créneaux «&nbsp;réservation externe&nbsp;»</td>
+        </tr>
+        <tr>
+          <td><strong>Disponibilités</strong></td>
+          <td>Un court texte («&nbsp;Sur rendez-vous, le mardi&nbsp;»)</td>
+          <td>Affiché dans la fenêtre de réservation, sous le nom</td>
+        </tr>
+        <tr>
+          <td><strong>Biographie</strong></td>
+          <td>Texte riche&nbsp;: paragraphes, liste, lien</td>
+          <td>La section «&nbsp;Présentation&nbsp;»</td>
+        </tr>
+        <tr>
+          <td><strong>Prestations</strong></td>
+          <td>Ce que la personne propose</td>
+          <td>La section «&nbsp;Prestations&nbsp;»</td>
+        </tr>
+        <tr>
+          <td><strong>Tarifs</strong></td>
+          <td>Montants, forfaits, durée</td>
+          <td>La section «&nbsp;Tarifs&nbsp;»</td>
+        </tr>
+        <tr class="row-important">
+          <td><strong>Page active</strong></td>
+          <td>Case à cocher</td>
+          <td>
+            <strong>Décochée</strong>&nbsp;: la personne reste utilisable en interne
+            (réservations, courriels) mais n’apparaît ni dans l’équipe, ni dans
+            la liste des destinataires, et sa page renvoie une erreur 404.
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <figure class="fig">
+      <img src={personne.src} alt="Fiche d’une professionnelle : métier, biographie, prestations et tarifs" loading="lazy" />
+      <ol class="marks">
+        {
+          [
+            "Le métier, repris du champ <em>Métier</em>.",
+            "Les étiquettes, identiques à celles de la liste de l’équipe.",
+            "La biographie. Écrivez «&nbsp;à préciser&nbsp;» plutôt que de laisser vide&nbsp;: c’est plus lisible qu’une page vide.",
+            "Les prestations.",
+            "Les tarifs.",
+          ].map((t, i) => (
+            <li>
+              <span class="mark">{i + 1}</span>
+              <span set:html={t} />
+            </li>
+          ))
+        }
+      </ol>
+      <figcaption>La fiche d’une professionnelle.</figcaption>
+    </figure>
+
+    <h3>Intervenant invité, sans page</h3>
+    <p>
+      Certains intervenants ne viennent que ponctuellement et ne doivent pas
+      avoir de page. Créez quand même une story dans <code>equipe/</code>,
+      renseignez au minimum <em>Nom</em>, <em>Métier</em> et
+      <em>E-mail</em>, puis <strong>décochez <em>Page active</em></strong>.
+    </p>
+    <p>
+      Cette story n’est alors plus visible sur le site, mais elle fonctionne
+      quand même&nbsp;: vous pouvez la rattacher à des séances, et les
+      demandes de rendez-vous de ces séances lui parviennent.
+    </p>
+
+    <div class="card gold">
+      <h3>Étiquettes&nbsp;: le vrai moteur des filtres</h3>
+      <p>
+        Les filtres de la page équipe et du catalogue d’activités ne sont pas
+        réglés quelque part&nbsp;: ils lisent les étiquettes de chaque story.
+      </p>
+      <ul>
+        <li>
+          <strong>Équipe</strong>&nbsp;: <em>Maternité</em>, <em>Féminité</em>,
+          <em>Parentalité</em>, <em>Bouger son corps</em>.
+        </li>
+        <li>
+          <strong>Activités</strong>&nbsp;: <em>Atelier</em> et <em>Sport</em>.
+        </li>
+      </ul>
+      <p class="muted">
+        Une personne qui n’a pas d’étiquette n’apparaît que dans «&nbsp;Toutes&nbsp;».
+        Une activité sans étiquette «&nbsp;Atelier&nbsp;» disparaît du filtre
+        correspondant. Ces étiquettes se trouvent dans la Storyblok, dans la
+        colonne <em>Étiquettes</em> de la story — pas dans un champ du contenu.
+      </p>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════ 7. ACTIVITÉS ══ -->
+  <section id="activites" class="guide-section">
+    <h2><span class="num">7</span> Les activités</h2>
+    <p>
+      Une activité est la <strong>description durable</strong> d’une pratique
+      (Yoga doux, Café des parents, Sophrologie…), alors qu’une séance est un
+      <strong>créneau daté</strong>. La page d’activité ne liste pas les dates
+      manuellement&nbsp;: elle affiche automatiquement les prochaines séances qui
+      lui sont rattachées.
+    </p>
+
+    <figure class="fig">
+      <img src={activitePage.src} alt="Page d’une activité : horaires, tarifs et prochain créneau" loading="lazy" />
+      <ol class="marks">
+        {
+          [
+            "Les étiquettes de l’activité, qui la font apparaître dans le catalogue et ses filtres.",
+            "Les <strong>horaires</strong> et les <strong>tarifs</strong>&nbsp;: deux champs de texte libre, à saisir à la main.",
+            "Les <strong>prochains créneaux</strong>&nbsp;: ils ne sont pas saisis ici, ils sont calculés à partir des séances rattachées.",
+            "Le lien <em>Réserver</em>&nbsp;: il ouvre le planning au bon jour.",
+          ].map((t, i) => (
+            <li>
+              <span class="mark">{i + 1}</span>
+              <span set:html={t} />
+            </li>
+          ))
+        }
+      </ol>
+      <figcaption>
+        Une page d’activité&nbsp;: les horaires sont saisis, les créneaux sont
+        déduits des séances.
+      </figcaption>
+    </figure>
+
+    <h3>Les champs, un par un</h3>
+    <div class="table-scroll"><table class="ref">
+      <thead>
+        <tr>
+          <th>Champ</th>
+          <th>Ce que vous mettez</th>
+          <th>Ce que ça change sur le site</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Titre</strong></td>
+          <td>Le nom de l’activité</td>
+          <td>Le titre de la page et de la carte du catalogue</td>
+        </tr>
+        <tr>
+          <td><strong>Image</strong></td>
+          <td>Un visuel de l’activité</td>
+          <td>La carte du catalogue et l’en-tête de la page</td>
+        </tr>
+        <tr>
+          <td><strong>Intervenant·e</strong></td>
+          <td>Le ou les noms</td>
+          <td>La ligne sous le titre de la page</td>
+        </tr>
+        <tr>
+          <td><strong>Horaires</strong></td>
+          <td>«&nbsp;Un atelier par mois, le samedi matin&nbsp;»</td>
+          <td>L’encart «&nbsp;Jours &amp; tarifs&nbsp;»</td>
+        </tr>
+        <tr>
+          <td><strong>Tarifs</strong></td>
+          <td>«&nbsp;15 €&nbsp;», «&nbsp;gratuit&nbsp;»…</td>
+          <td>Le même encart</td>
+        </tr>
+        <tr>
+          <td><strong>Description</strong></td>
+          <td>Texte riche de présentation</td>
+          <td>Le corps de la page</td>
+        </tr>
+        <tr>
+          <td><strong>E-mail / Téléphone</strong></td>
+          <td>Coordonnées de contact de l’activité</td>
+          <td>Le bouton <em>Nous contacter</em></td>
+        </tr>
+        <tr>
+          <td><strong>Bouton de réservation</strong></td>
+          <td>Libellé + lien</td>
+          <td>Le bouton d’accès à la réservation</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <h3>Le catalogue</h3>
+    <figure class="fig">
+      <img src={activitesCatalogue.src} alt="Catalogue des activités avec les filtres Sport et Ateliers" loading="lazy" />
+      <ol class="marks">
+        {
+          [
+            "Les filtres <em>Toutes / Sport / Ateliers</em>&nbsp;: ils lisent les étiquettes des activités.",
+            "Le titre de l’activité.",
+            "L’intervenant·e.",
+            "Les étiquettes, affichées sous la carte.",
+          ].map((t, i) => (
+            <li>
+              <span class="mark">{i + 1}</span>
+              <span set:html={t} />
+            </li>
+          ))
+        }
+      </ol>
+      <figcaption>Le catalogue des activités.</figcaption>
+    </figure>
+
+    <div class="card warn">
+      <h3>Attention&nbsp;: le filtre «&nbsp;Sport&nbsp;» est vide</h3>
+      <p>
+        Le catalogue propose un filtre <em>Sport</em>, mais les activités sont
+        étiquetées <em>Bouger son corps</em>&nbsp;: le filtre ne trouve rien et
+        affiche une page vide.
+      </p>
+      <figure class="fig fig-inline">
+        <img src={activitesFiltreSport.src} alt="Filtre Sport du catalogue des activités, sans aucun résultat" loading="lazy" />
+        <figcaption>Filtre «&nbsp;Sport&nbsp;»&nbsp;: aucun résultat.</figcaption>
+      </figure>
+      <p>
+        <strong>Contournement en attendant la correction</strong>&nbsp;:
+        ltoutes les activités de sport sont déjà accessibles depuis
+        «&nbsp;Toutes&nbsp;». N’ajoutez pas l’étiquette <em>Sport</em> à la
+        main&nbsp;: le libellé du filtre est issu de la liste des activités et
+        non des étiquettes, et cela ne corrigerait pas le filtre.
+      </p>
+    </div>
+
+    <p class="muted">
+      Sur téléphone, la page de l’équipe passe en cartes plus étroites&nbsp;:
+      même contenu, même étiquette.
+    </p>
+    <figure class="fig fig-mobile">
+      <img src={mobileEquipe.src} alt="La page « Notre équipe » affichée sur téléphone" loading="lazy" />
+      <figcaption>L’équipe sur téléphone.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ 8. ACCUEIL ══ -->
+  <section id="accueil" class="guide-section">
+    <h2><span class="num">8</span> La page d’accueil</h2>
+    <p>
+      L’accueil est une page <code>home</code> composée d’une suite de blocs,
+      de haut en bas. Chaque bloc a ses propres champs&nbsp;: cliquez dans le
+      Visual Editor pour atteindre directement le texte concerné.
+    </p>
+
+    <h3>Les blocs disponibles</h3>
+    <div class="table-scroll"><table class="ref">
+      <thead>
+        <tr><th>Bloc</th><th>À quoi il sert</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Hero</strong></td><td>Le grand bandeau d’ouverture&nbsp;: titre, texte, boutons, image de fond</td></tr>
+        <tr><td><strong>Cards</strong></td><td>Trois cartes pour présenter les pôles (bien-être, maternité, parentalité)</td></tr>
+        <tr><td><strong>Stats</strong></td><td>Une rangée de chiffres clés</td></tr>
+        <tr><td><strong>Activities</strong></td><td>Les prochains ateliers (voir ci-dessous)</td></tr>
+        <tr><td><strong>Media text</strong></td><td>Une image et un texte qui se font face</td></tr>
+        <tr><td><strong>Membership</strong></td><td>La section sur l’association, avec le tarif d’adhésion</td></tr>
+        <tr><td><strong>Gallery</strong></td><td>Une galerie d’images du lieu</td></tr>
+        <tr><td><strong>Testimonials</strong></td><td>Les témoignages</td></tr>
+        <tr><td><strong>FAQ</strong></td><td>Les questions fréquentes, questions + réponses</td></tr>
+        <tr><td><strong>Spotlight</strong></td><td>Un bloc mise en avant sur deux colonnes</td></tr>
+        <tr><td><strong>Articles</strong></td><td>Une liste d’articles ou d’actualités</td></tr>
+        <tr><td><strong>Concept</strong></td><td>Une présentation longue du projet</td></tr>
+        <tr><td><strong>CTA banner</strong></td><td>Un bandeau d’appel à l’action</td></tr>
+        <tr><td><strong>Newsletter</strong></td><td>Un formulaire d’inscription à la lettre d’information</td></tr>
+        <tr><td><strong>Contact</strong></td><td>Les coordonnées et le formulaire de contact</td></tr>
+        <tr><td><strong>Team</strong></td><td>Un aperçu de l’équipe</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Le bloc «&nbsp;Les ateliers à venir&nbsp;»</h3>
+    <p>
+      C’est le bloc le plus mécanique de l’accueil. Il ne contient aucun texte
+      libre&nbsp;: chaque carte est construite à partir d’une séance.
+    </p>
+
+    <figure class="fig">
+      <img src={accueilActivites.src} alt="Bloc « Les ateliers à venir » de la page d’accueil" loading="lazy" />
+      <ol class="marks">
+        {
+          [
+            "Le libellé <em>ACTIVITÉ</em> ou <em>SPORT</em>&nbsp;: repris du champ <em>Type</em> de la séance.",
+            "Le titre, la durée et le nom du professionnel&nbsp;: tous repris de la séance, rien à recopier.",
+            "Le <strong>prochain créneau</strong>&nbsp;: la prochaine séance future rattachée à cette activité.",
+            "Le <strong>prix</strong>&nbsp;: seul champ réellement saisi à la main sur cette carte.",
+            "Une carte sans prix ni image est normale&nbsp;: ces deux champs sont facultatifs.",
+          ].map((t, i) => (
+            <li>
+              <span class="mark">{i + 1}</span>
+              <span set:html={t} />
+            </li>
+          ))
+        }
+      </ol>
+      <figcaption>
+        Les cartes d’atelier de l’accueil&nbsp;: la quasi-totalité vient des
+        séances.
+      </figcaption>
+    </figure>
+
+    <div class="card gold">
+      <h3>Les règles de ce bloc</h3>
+      <ul>
+        <li>
+          Chaque carte a un champ <strong>Séance</strong>&nbsp;: c’est la seule
+          chose à choisir dans Storyblok.
+        </li>
+        <li>
+          <strong>Une carte sans séance, ou dont la séance est passée, n’est
+          pas affichée.</strong> Une carte vide n’est pas une erreur, c’est le
+          fonctionnement attendu.
+        </li>
+        <li>
+          Le bouton <em>S’inscrire</em> ouvre le planning déjà positionné sur le
+          bon jour.
+        </li>
+        <li class="row-important">
+          <strong>Le contenu de l’accueil est calculé lors de la
+          construction du site.</strong> Après avoir publié une nouvelle séance,
+          la carte ne se met à jour qu’après la prochaine reconstruction
+          automatique&nbsp;: comptez quelques minutes. Si la carte ne change
+          pas, c’est presque toujours cela.
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════ 9. CONTACT ══ -->
+  <section id="contact" class="guide-section">
+    <h2><span class="num">9</span> Le formulaire de contact</h2>
+    <p>
+      Le bloc <em>Contact</em> affiche les coordonnées et un formulaire. Il
+      existe en deux modes, et c’est le champ <em>Mode du formulaire</em> qui
+      les distingue.
+    </p>
+
+    <figure class="fig">
+      <img src={contact.src} alt="Bloc de contact : liste des destinataires et formulaire de message" loading="lazy" />
+      <ol class="marks">
+        {
+          [
+            "La liste <strong>Destinataire</strong>. En mode «&nbsp;Général&nbsp;», elle se construit <strong>toute seule</strong> à partir des professionnelles qui ont un e-mail dans <code>equipe/</code>, plus une entrée <em>Administratif</em>. Il n’y a rien à maintenir.",
+            "L’envoi. Le message arrive au destinataire choisi, et la visiteuse reçoit une confirmation.",
+          ].map((t, i) => (
+            <li>
+              <span class="mark">{i + 1}</span>
+              <span set:html={t} />
+            </li>
+          ))
+        }
+      </ol>
+      <figcaption>Le bloc de contact de l’accueil.</figcaption>
+    </figure>
+
+    <div class="table-scroll"><table class="ref">
+      <thead>
+        <tr><th>Mode</th><th>Ce qui s’affiche</th><th>Quand l’utiliser</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Général (dropdown)</strong></td>
+          <td>Une liste déroulante pour choisir le destinataire</td>
+          <td>Sur les pages générales&nbsp;: contact, footer, home</td>
+        </tr>
+        <tr>
+          <td><strong>Destinataire fixe</strong></td>
+          <td>Aucun choix&nbsp;: le message part à l’adresse indiquée</td>
+          <td>Sur une fiche de professionnelle, pour que le message aille directement à la bonne personne</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="card">
+      <h3>Bon à savoir</h3>
+      <ul>
+        <li>
+          Ajouter une professionnelle avec son <strong>e-mail</strong> suffit
+          pour qu’elle apparaisse dans la liste&nbsp;: aucune manipulation
+          supplémentaire.
+        </li>
+        <li>
+          Une personne sans e-mail n’apparaît pas dans la liste&nbsp;: son
+          message ne peut donc pas lui être adressé.
+        </li>
+        <li>
+          <strong>Adresser le message à quelqu’un d’autre que ce qui est
+          affiché n’est pas possible</strong>&nbsp;: la liste restreint
+          volontairement les envois aux professionnelles déclarées. C’est une
+          protection, pas une limite à contourner.
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ 10. RÉGLAGES ══ -->
+  <section id="reglages" class="guide-section">
+    <h2><span class="num">10</span> Menu, pied de page et couleurs</h2>
+    <p>
+      Tout ce qui touche à l’en-tête, au pied de page et aux couleurs du site
+      est réuni dans <strong>une seule story&nbsp;: <code>global</code></strong>.
+      Une modification ici se répercute sur toutes les pages.
+    </p>
+
+    <div class="table-scroll"><table class="ref">
+      <thead>
+        <tr><th>Groupe</th><th>Champs</th><th>Effet</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Identité</strong></td>
+          <td>Nom du site · Logo · Favicon</td>
+          <td>Le logo en en-tête, l’icône de l’onglet</td>
+        </tr>
+        <tr>
+          <td><strong>SEO</strong></td>
+          <td>Titre SEO par défaut · Description SEO par défaut</td>
+          <td>Utilisés pour les pages qui ne les.redéfinissent pas.Pages à la racine ont leurs propres champs</td>
+        </tr>
+        <tr>
+          <td><strong>Liens du menu</strong></td>
+          <td>Une entrée par lien&nbsp;: libellé + lien</td>
+          <td>Le menu principal, dans l’ordre de la liste. Le bouton de droite vient des deux champs suivants</td>
+        </tr>
+        <tr>
+          <td><strong>Bouton du menu</strong></td>
+          <td>Libellé · Lien</td>
+          <td>Le bouton d’appel à l’action en haut à droite («&nbsp;Nous rejoindre&nbsp;»)</td>
+        </tr>
+        <tr>
+          <td><strong>Pied de page</strong></td>
+          <td>Marque · Baseline · Adresse · Téléphone · E-mail · Petite ligne</td>
+          <td>Le pied de page, sur toutes les pages</td>
+        </tr>
+        <tr>
+          <td>
+            <strong>Couleurs</strong>
+          </td>
+          <td>Couleur primaire · Couleur d’accent · Couleur de fond</td>
+          <td>La palette du site entier, au format hexadécimal (<code>#2e5249</code>)</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="card gold">
+      <h3>Le menu se range tout seul sur téléphone</h3>
+      <p>
+        Quand la place manque, les liens passent dans un menu hamburger. Vous
+        n’avez rien à faire&nbsp;: ni de version mobile à créer, ni de menu
+        secondaire à remplir. En revanche, <strong>une infinité de liens
+        complique le repli</strong>&nbsp: au-delà d’une dizaine, le menu
+        hamburger devient peu praticable.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ 11. PIÈGES ══ -->
+  <section id="pieges" class="guide-section">
+    <h2><span class="num">11</span> Pièges &amp; dépannage</h2>
+
+    <h3>Les dates et les heures</h3>
+    <div class="card warn">
+      <h3>Le piège n°&nbsp;1&nbsp;: une date saisie sans fuseau n’est pas enregistrée</h3>
+      <p>
+        Dans Storyblok, un champ date/heure n’affiche sa valeur que si elle est
+        écrite avec le décalage horaire de Paris. Concrètement&nbsp;:
+      </p>
+      <ul>
+        <li><strong>À faire</strong>&nbsp;: saisir par le calendrier du champ.</li>
+        <li>
+          <strong>À éviter</strong>&nbsp;: saisir des horaires en calculant soi-même
+          le décalage, ou coller une date toute seule.
+        </li>
+      </ul>
+      <p>
+        <strong>Le symptôme</strong>&nbsp;: vous rouvrez la séance et le champ <em>Début</em>
+        est vide, alors que la séance apparaît bien dans le
+        planning. Si le champ est vide, Storyblok ne vous montrera plus jamais
+        la bonne valeur&nbsp;: resaisissez la date par le calendrier.
+      </p>
+    </div>
+
+    <h3>Les autres pièges fréquents</h3>
+    <div class="table-scroll"><table class="ref">
+      <thead>
+        <tr><th>Symptôme</th><th>Cause probable</th><th>Correction</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>La séance n’apparaît nulle part</td>
+          <td>Elle n’est pas référencée dans le planning</td>
+          <td>L’ajouter dans le bloc <em>Planning</em> puis publier la page</td>
+        </tr>
+        <tr>
+          <td>La demande de rendez-vous arrive à l’adresse générale</td>
+          <td>Aucun professionnel n’est rattaché à la séance</td>
+          <td>Renseigner <em>Praticien·ne(s)</em> dans la story de la séance</td>
+        </tr>
+        <tr>
+          <td>Un créneau est à la mauvaise heure</td>
+          <td>Décalage de fuseau à la saisie de la date</td>
+          <td>Resaisir <em>Début</em> par le calendrier</td>
+        </tr>
+        <tr>
+          <td>Le compteur de places ne change pas</td>
+          <td>Le champ <em>Places</em> contient un texte au lieu d’un nombre</td>
+          <td>Ne laisser que le chiffre</td>
+        </tr>
+        <tr>
+          <td>Une professionnelle n’apparaît pas dans l’équipe</td>
+          <td><em>Page active</em> est décochée, ou pas d’étiquette</td>
+          <td>Cocher <em>Page active</em> et ajouter au moins une étiquette</td>
+        </tr>
+        <tr>
+          <td>Une activité n’apparaît pas dans le catalogue</td>
+          <td>La story est en brouillon</td>
+          <td>Publier la story de l’activité</td>
+        </tr>
+        <tr>
+          <td>La carte de l’accueil ne se met pas à jour</td>
+          <td>Le contenu est figé au moment de la construction du site</td>
+          <td>Patienter la reconstruction, ou la déclencher depuis Storyblok</td>
+        </tr>
+        <tr>
+          <td>Le lien vers une page renvoie une erreur 404</td>
+          <td>La story cible n’est pas publiée</td>
+          <td>Publier la story, ou choisir un autre lien</td>
+        </tr>
+        <tr>
+          <td>Le Visual Editor a écrasé ma mise en forme</td>
+          <td>Édition visuelle sur un bloc vide ou sur du texte déjà stylé</td>
+          <td>Annuler la modification et éditer le texte dans le panneau de droite plutôt que sur la page</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <h3>État du contenu au 1<sup>er</sup> octobre 2026</h3>
+    <p>
+      Points relevés lors de la rédaction de ce guide, utiles à connaître&nbsp;:
+    </p>
+    <ul class="audit">
+      <li>
+        <strong>30 séances sur 90 n’ont aucun professionnel rattaché</strong>
+        (yoga, pilates, Face Yoga, Café des parents, Nanapéro). Tant que ce n’est
+        pas fait, les demandes de ces créneaux arrivent à l’adresse
+        administrative&nbsp;: les rattacher est prioritaire.
+      </li>
+      <li>
+        <strong>3 séances ont une date illisible</strong> dans Storyblok&nbsp;:
+        <code>ateliers-test</code>, <code>2026-10-31-ateliers-parents-enfants</code>
+        et <code>2026-10-02-pilates</code>. Leurs dates doivent être ressaisies.
+      </li>
+      <li>
+        <strong>Le planning est publié avec 89 séances, le brouillon en
+        contient 91</strong>&nbsp;: deux séances recently ajoutées ne sont pas
+        encore en ligne.
+      </li>
+      <li>
+        <strong>8 activités ne sont publiées qu’en brouillon</strong>&nbsp;:
+        Sophrologie, Yin Yoga, Yoga pré et post natal, Cercle de femmes, Atelier
+        Porter Bébé, Atelier Bébé signe, Atelier Pleurs et Sommeil, Ateliers
+        Éveil du tout-petit. Elles n’apparaissent pas en ligne.
+      </li>
+      <li>
+        <strong>Le filtre «&nbsp;Sport&nbsp;» du catalogue est vide</strong>, faute
+        d’activité étiquetée «&nbsp;Sport&nbsp;».
+      </li>
+    </ul>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ 12. CHECKLIST ══ -->
+  <section id="checklist" class="guide-section">
+    <h2><span class="num">12</span> Vérifier avant de publier</h2>
+    <p>La routine à faire pour chaque modification&nbsp;:</p>
+
+    <div class="card">
+      <ol class="checklist">
+        <li>
+          <strong>Vérifier dans l’aperçu.</strong> Ouvrir la page concernée dans
+          le Visual Editor et regarder le résultat, pas les champs.
+        </li>
+        <li>
+          <strong>Pour une séance&nbsp;:</strong> ouvrir sa fiche de contrôle et
+          confirmer que <em>Praticien·ne(s)</em> et <em>Dans le planning</em>
+          sont bien renseignés.
+        </li>
+        <li>
+          <strong>Pour une nouvelle page&nbsp;:</strong> l’ouvrir une fois en
+          entier, en vérifiant en particulier les liens et les images.
+        </li>
+        <li>
+          <strong>Regarder sur téléphone.</strong> Le planning et l’équipe ne se
+          présentent pas du tout de la même façon&nbsp;: un titre qui déborde ou
+          une image mal cadrée se voit immédiatement sur petit écran.
+        </li>
+        <li>
+          <strong>Publier</strong>, puis attendre la reconstruction du site avant
+          de considérer que c’est en ligne.
+        </li>
+      </ol>
+    </div>
+
+    <figure class="fig">
+      <img src={personneReserver.src} alt="Bas de la fiche d’une professionnelle : bouton de réservation et formulaire de contact" loading="lazy" />
+      <figcaption>
+        Bas de fiche d’une professionnelle&nbsp;: bouton de réservation et
+        formulaire de contact en mode «&nbsp;destinataire fixe&nbsp;».
+      </figcaption>
+    </figure>
+
+    <figure class="fig">
+      <img src={fluxReservation.src} alt="Schéma du parcours d’une réservation puis d’une annulation" loading="lazy" />
+      <figcaption>
+        Ce qui se passe après le clic&nbsp;: la demande est enregistrée, la
+        visiteuse reçoit un accusé de réception, le professionnel reçoit la
+        demande avec un lien d’annulation, et les deux reçoivent le
+        rendez-vous dans leur agenda.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ 13. RÉFÉRENCEMENT ══ -->
+  <section id="referencement" class="guide-section">
+    <h2><span class="num">13</span> Référencement</h2>
+    <p>
+      Quelques champs décident de la façon dont Google et les réseaux sociaux
+      présentent vos pages. Tout le reste est automatique&nbsp;: le site
+      génère déjà l’adresse canonique, les aperçus de partage et les données
+      structurées (organisation, questions fréquentes, événements,
+      fiches professionnelles).
+    </p>
+
+    <h3>Les champs, un par un</h3>
+    <div class="table-scroll"><table class="ref">
+      <thead>
+        <tr><th>Champ</th><th>Où</th><th>Ce qu’il faut y mettre</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Titre SEO</strong></td>
+          <td>Chaque page</td>
+          <td>Le titre affiché dans Google. Le nom du site est ajouté tout seul si vous l’oubliez&nbsp;: «&nbsp;Sophrologie&nbsp;» devient «&nbsp;Sophrologie — La Parent’elle&nbsp;». Inutile de le répéter vous-même.</td>
+        </tr>
+        <tr>
+          <td><strong>Description SEO</strong></td>
+          <td>Chaque page + <code>global</code> (valeur par défaut)</td>
+          <td>Une ou deux phrases qui donnent envie de cliquer, affichées sous le titre dans Google. Sans elle, c’est la description générale du site qui est utilisée.</td>
+        </tr>
+        <tr>
+          <td><strong>Image de partage</strong></td>
+          <td>Chaque page + <code>global</code> (valeur par défaut)</td>
+          <td>L’image montrée quand on partage la page sur Facebook, WhatsApp ou LinkedIn. Format paysage (idéalement 1200 × 630). Sans elle, c’est l’image du site, puis le logo qui sont utilisés.</td>
+        </tr>
+        <tr>
+          <td><strong>Type de partage</strong></td>
+          <td>Chaque page</td>
+          <td>Laisser «&nbsp;Site web&nbsp;» sauf pour un contenu rédigé comme un article de blog, qui prend «&nbsp;Article&nbsp;».</td>
+        </tr>
+        <tr>
+          <td><strong>Référencement</strong></td>
+          <td>Chaque page</td>
+          <td>Laisser «&nbsp;Indexée&nbsp;». «&nbsp;Non indexée&nbsp;» retire la page des résultats Google <em>sans</em> la masquer aux visiteurs&nbsp;: utile pour une page en travaux ou un doublon.</td>
+        </tr>
+        <tr>
+          <td><strong>URL canonique</strong></td>
+          <td>Chaque page</td>
+          <td><strong>Laisser vide.</strong> À ne remplir que si deux pages montrent exactement le même contenu&nbsp;: on y colle alors l’adresse de la page «&nbsp;officielle&nbsp;» pour éviter que Google les pénalise comme doublons.</td>
+        </tr>
+        <tr>
+          <td><strong>Schema JSON-LD (avancé)</strong></td>
+          <td>Chaque page, fiche et activité</td>
+          <td><strong>Laisser vide.</strong> Le site génère déjà les bons schémas. À n’utiliser que sur indication précise.</td>
+        </tr>
+        <tr>
+          <td><strong>Couleur de thème</strong></td>
+          <td><code>global</code></td>
+          <td>La couleur de la barre du navigateur sur téléphone (ex. <code>#2e5249</code>). Vide&nbsp;: le vert du site est utilisé.</td>
+        </tr>
+        <tr>
+          <td><strong>Comptes X / Twitter</strong></td>
+          <td><code>global</code></td>
+          <td>Les identifiants avec l’arobase, pour signer les aperçus partagés sur X.</td>
+        </tr>
+        <tr>
+          <td><strong>Réseaux sociaux</strong></td>
+          <td><code>global</code></td>
+          <td>Une adresse par ligne (Facebook, Instagram, LinkedIn…). Elles alimentent la fiche de l’organisation vue par Google.</td>
+        </tr>
+        <tr>
+          <td><strong>Latitude / Longitude</strong></td>
+          <td><code>global</code></td>
+          <td>La position du lieu (ex. <code>44.0565</code> / <code>5.1517</code>), pour le référencement local. Optionnel.</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="card">
+      <h3>Bon à savoir</h3>
+      <ul>
+        <li>
+          Un changement de titre ou de description met plusieurs jours à
+          apparaître dans Google&nbsp;: c’est normal, les moteurs revisitent
+          les pages à leur rythme.
+        </li>
+        <li>
+          Pour tester un aperçu de partage, collez l’adresse de la page dans
+          le <em>débogueur de partage</em> de Facebook ou l’<em>inspecteur de
+          post</em> de LinkedIn&nbsp;: ils montrent exactement ce que verront
+          les visiteurs.
+        </li>
+        <li>
+          Les pages d’aperçu (<code>/guide</code>, <code>/global</code>, les
+          fiches de séances) ne sont jamais référencées&nbsp;: elles
+          n’existent que sur le site de prévisualisation.
+        </li>
+      </ul>
+    </div>
+  </section>
+</div>
+</article>
+
+<style>
+  .guide {
+    --guide-max: 68rem;
+    max-width: var(--guide-max);
+    margin: 0 auto;
+    padding: 0 1.25rem 6rem;
+  }
+
+  /* ---------- en-tête ---------- */
+  .guide-head {
+    padding: 3.5rem 0 2.5rem;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 2.5rem;
+  }
+
+  .guide-head h1 {
+    margin: 0.35rem 0 1rem;
+    font-size: clamp(2.4rem, 6vw, 3.6rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+  }
+
+  .lead {
+    max-width: 44rem;
+    font-size: 1.15rem;
+    color: var(--muted);
+  }
+
+  .lead strong {
+    color: var(--ink);
+  }
+
+  .guide-meta {
+    margin: 1.25rem 0 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  /* ---------- sommaire ---------- */
+  .guide-toc {
+    background: var(--neu-surface, #fffdf7);
+    box-shadow: var(--shadow-neu-sm);
+    border-radius: var(--radius-card);
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 3rem;
+  }
+
+  .toc-title {
+    margin: 0 0 0.75rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .guide-toc ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    columns: 2;
+    column-gap: 2rem;
+  }
+
+  .guide-toc li {
+    break-inside: avoid;
+    margin-bottom: 0.4rem;
+  }
+
+  .guide-toc a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+
+  .guide-toc a:hover {
+    border-bottom-color: currentColor;
+  }
+
+  .toc-note {
+    margin: 1.25rem 0 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  /* ---------- sections ---------- */
+  .guide-section {
+    margin-bottom: 4.5rem;
+    scroll-margin-top: 5rem;
+  }
+
+  .guide-section > h2 {
+    display: flex;
+    align-items: baseline;
+    gap: 0.9rem;
+    margin: 0 0 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--c-pine);
+    font-size: clamp(1.6rem, 3.4vw, 2.1rem);
+    line-height: 1.15;
+  }
+
+  .guide-section > h2 .num {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 50%;
+    background: var(--c-pine);
+    color: var(--c-cream);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .guide-section h3 {
+    margin: 2.5rem 0 0.85rem;
+    font-size: 1.3rem;
+  }
+
+  .guide-section p {
+    max-width: 46rem;
+  }
+
+  .guide-section ul:not(.marks):not(.audit):not(.checklist),
+  .guide-section ol {
+    max-width: 46rem;
+  }
+
+  .muted {
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  code {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 0.86em;
+    background: var(--c-sand);
+    padding: 0.1em 0.4em;
+    border-radius: 0.3rem;
+  }
+
+  a {
+    color: var(--accent);
+  }
+
+  /* ---------- encadrés ---------- */
+  .card {
+    margin: 2rem 0;
+    padding: 1.6rem 1.85rem;
+    background: var(--neu-surface, #fffdf7);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-neu-sm);
+    max-width: 52rem;
+  }
+
+  .card > :first-child {
+    margin-top: 0;
+  }
+
+  .card > :last-child {
+    margin-bottom: 0;
+  }
+
+  .card h3 {
+    margin-top: 0;
+    font-size: 1.18rem;
+  }
+
+  .card.gold {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--c-marigold) 12%, #fffdf7),
+      #fffdf7 70%
+    );
+  }
+
+  .card.warn {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--c-marigold) 20%, #fffdf7),
+      #fffdf7 70%
+    );
+    box-shadow: var(--shadow-neu-inset);
+  }
+
+  /* ---------- listes ---------- */
+  .checklist {
+    padding-left: 1.2rem;
+  }
+
+  .checklist li {
+    margin-bottom: 0.7rem;
+  }
+
+  .steps {
+    padding-left: 1.25rem;
+  }
+
+  .steps li {
+    margin-bottom: 0.8rem;
+    padding-left: 0.25rem;
+  }
+
+  .audit {
+    padding-left: 1.2rem;
+  }
+
+  .audit li {
+    margin-bottom: 0.7rem;
+  }
+
+  .urls {
+    padding-left: 1.2rem;
+  }
+
+  .urls li {
+    margin-bottom: 0.4rem;
+  }
+
+  .faq dt {
+    margin-top: 1.1rem;
+    font-weight: 600;
+    color: var(--c-pine-deep, var(--accent));
+  }
+
+  .faq dt:first-child {
+    margin-top: 0;
+  }
+
+  .faq dd {
+    margin: 0.3rem 0 0;
+    color: var(--muted);
+  }
+
+  /* ---------- tableaux ---------- */
+  .table-scroll {
+    max-width: 56rem;
+    margin: 1.5rem 0 2rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .ref {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.94rem;
+    background: #fff;
+    border-radius: 0.9rem;
+    overflow: hidden;
+    box-shadow: var(--shadow-neu-sm);
+  }
+
+  .ref caption {
+    padding: 0 0.25rem 0.6rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+  }
+
+  .ref th,
+  .ref td {
+    padding: 0.8rem 1rem;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .ref thead th {
+    background: var(--c-sage-soft);
+    font-size: 0.74rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-pine-deep, var(--accent));
+    white-space: nowrap;
+  }
+
+  .ref tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .ref td:first-child {
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  .ref-lookup td:first-child {
+    white-space: normal;
+  }
+
+  .ref .row-important td {
+    background: color-mix(in srgb, var(--c-marigold) 10%, #fff);
+  }
+
+  /* ---------- figures ---------- */
+  .fig {
+    margin: 2.25rem 0 2.75rem;
+    max-width: 56rem;
+  }
+
+  .fig img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 0.9rem;
+    box-shadow: var(--shadow-neu);
+  }
+
+  .fig figcaption {
+    margin-top: 0.85rem;
+    font-size: 0.88rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .fig figcaption :global(strong) {
+    font-style: normal;
+  }
+
+  .fig figcaption :global(em) {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .fig figcaption :global(code) {
+    font-style: normal;
+  }
+
+  /* légendes numérotées */
+  .marks {
+    margin: 1.1rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .marks li {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: 0.7rem;
+    align-items: start;
+    font-size: 0.95rem;
+  }
+
+  .marks .mark {
+    display: grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: var(--c-pine);
+    color: var(--c-cream);
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .split {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    align-items: start;
+  }
+
+  .split .fig {
+    margin-bottom: 1rem;
+  }
+
+  .fig-mobile {
+    max-width: 20rem;
+  }
+
+  .fig-inline {
+    margin: 1.25rem 0;
+    max-width: 34rem;
+  }
+
+  /* ---------- écrans larges ---------- */
+  @media (min-width: 64rem) {
+    .guide-body {
+      display: grid;
+      grid-template-columns: 15rem minmax(0, 1fr);
+      column-gap: 3.5rem;
+      align-items: start;
+    }
+
+    .guide-toc {
+      grid-column: 1;
+      grid-row: 1;
+      position: sticky;
+      top: 5.5rem;
+      margin-bottom: 0;
+    }
+
+    .guide-body > .guide-section {
+      grid-column: 2;
+    }
+
+    .guide-toc ol {
+      columns: 1;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .guide-toc ol {
+      columns: 1;
+    }
+
+    .table-scroll {
+      margin: 1.25rem 0 1.5rem;
+      /* keep the rounded card readable while scrolling */
+      border-radius: 0.9rem;
+    }
+
+    .ref {
+      font-size: 0.88rem;
+      min-width: 30rem;
+    }
+
+    .ref th,
+    .ref td {
+      padding: 0.6rem 0.7rem;
+    }
+
+    .ref td:first-child {
+      white-space: normal;
+    }
+  }
+</style>

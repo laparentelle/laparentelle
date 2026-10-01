@@ -7,7 +7,15 @@ import {
   isBookingsConfigured,
 } from "../../lib/bookings";
 import { fetchPractitioners, fetchPlanningSessions } from "../../lib/sessions";
+import { getGlobalStory } from "../../lib/storyblok";
 import { buildBookOpener } from "../../lib/bookDialog";
+import {
+  absoluteUrl,
+  eventSchema,
+  jsonLd,
+  siteInfoFromGlobal,
+  siteOrigin,
+} from "../../lib/seo";
 
 interface Props {
   blok: {
@@ -221,6 +229,31 @@ const hours = Array.from(
   (_, i) => gridStart + i * 60,
 );
 
+// Event schema for the bookable slots (kept in the body: JSON-LD is valid
+// anywhere). Externally-booked slots omit `offers`: availability lives on the
+// practitioner's own platform, not here.
+const origin = siteOrigin(Astro.url, Astro.site);
+const site = siteInfoFromGlobal(
+  origin,
+  (await getGlobalStory())?.content,
+  "La Parent'elle",
+);
+const eventNodes = sessions.slice(0, 40).map((s) =>
+  eventSchema(site, {
+    title: s.title,
+    start: s.date,
+    minutes: s.minutes,
+    url: absoluteUrl(origin, "/programme-du-mois?date=" + keyOf(s.date)),
+    description:
+      typeof s.note === "string" && s.note.trim() ? s.note.trim() : undefined,
+    capacity: !s.external && s.capacity ? s.capacity : undefined,
+    performers: practitionersOf(s).map((p) => ({
+      name: p.name,
+      url: p.url,
+    })),
+  }),
+);
+
 // Opens the shared booking dialog for a session (see `BookDialog.astro`,
 // filled at click time by the opener built in `src/lib/bookDialog.ts`).
 const bookJs = (s: (typeof sessions)[number], label: string) =>
@@ -427,6 +460,12 @@ const bookJs = (s: (typeof sessions)[number], label: string) =>
       <a href="tel:+33979209924"> 09 79 20 99 24</a> ou écrivez-nous via le
       <a href="/contact">formulaire de contact</a>.
     </p>
+  )}
+  {eventNodes.length > 0 && (
+    <script
+      type="application/ld+json"
+      set:html={jsonLd({ "@context": "https://schema.org", "@graph": eventNodes })}
+    />
   )}
 </section>
 
