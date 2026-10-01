@@ -1,0 +1,22 @@
+---
+/**
+ * Guide de l'éditeur — documentation interne en français (contenu, pas
+ * technique). Rendue UNIQUEMENT en dev / preview (IS_PREVIEW=true) : en
+ * production cette route répond systématiquement 404.
+ */
+export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Guide from "../components/Guide.astro";
+
+const isPreview = import.meta.env.DEV || import.meta.env.IS_PREVIEW === "true";
+if (!isPreview) return new Response(null, { status: 404 });
+---
+
+<BaseLayout
+  title="Guide de l’éditeur"
+  description="Documentation interne pour l’édition du contenu du site."
+  noindex
+>
+  <Guide />
+</BaseLayout>

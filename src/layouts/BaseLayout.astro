@@ -3,18 +3,50 @@ import "../styles/global.css";
 import Button from "../components/Button.astro";
 import BookDialog from "../components/BookDialog.astro";
 import { getGlobalStory } from "../lib/storyblok";
-import { resolveLink, imgSrc, imgAlt } from "../lib/links";
+import { resolveLink, imgSrc, lines } from "../lib/links";
+import {
+  absoluteUrl,
+  breadcrumbSchema,
+  cleanText,
+  geoFrom,
+  jsonLd,
+  normalisePath,
+  organizationSchema,
+  parseManualSchema,
+  robotsContent,
+  siteOrigin,
+  websiteSchema,
+} from "../lib/seo";
+import type { Crumb, SchemaNode, SiteInfo } from "../lib/seo";
 
 interface Props {
   title?: string;
   description?: string;
+  /** Route-level hard noindex (preview-only pages). Wins over `robots`. */
   noindex?: boolean;
+  /** Editor-controlled robots option ("index,follow" | "noindex,follow" | …). */
+  robots?: unknown;
+  /** Page-level social image (absolute Storyblok URL). */
+  image?: string;
+  ogType?: "website" | "article";
+  /** Editor-controlled canonical override (absolute or site-relative). */
+  canonical?: string;
+  /** Extra JSON-LD nodes appended to the site-wide @graph. */
+  schema?: SchemaNode[];
+  /** Breadcrumb trail (first item is usually the homepage). */
+  breadcrumbs?: Crumb[];
 }
 
 const {
   title: pageTitle,
   description: pageDescription,
   noindex = false,
+  robots: robotsOption,
+  image: pageImage,
+  ogType = "website",
+  canonical: canonicalOverride,
+  schema: extraSchema = [],
+  breadcrumbs = [],
 } = Astro.props;
 
 // Site-wide settings (never throws: falls back when the story is missing).
@@ -24,8 +56,11 @@ const gtext = (v: unknown, fallback = "") =>
 const isHex = (v: unknown): v is string =>
   typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v.trim());
 
+const origin = siteOrigin(Astro.url, Astro.site);
+const path = normalisePath(Astro.url.pathname);
+
 const siteName = gtext(globalContent.site_name, "La Parent'elle");
-const title =
+const rawTitle =
   pageTitle ??
   gtext(
     globalContent.seo_title,
@@ -37,8 +72,83 @@ const description =
     globalContent.seo_description,
     "La Parent'elle, un lieu pluridisciplinaire pour la femme et la famille.",
   );
+
+// Qualify page titles with the site name, but never mangle a title that is
+// already qualified ("Contact | La Parent'Elle" must stay untouched).
+const flatten = (s: string) =>
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const isQualified = (t: string) =>
+  flatten(t).indexOf(flatten(siteName)) !== -1 ||
+  /[|—–·]/.test(t) ||
+  /\s-\s/.test(t);
+const title =
+  pageTitle && !isQualified(rawTitle) ? rawTitle + " — " + siteName : rawTitle;
+
 const favicon = imgSrc(globalContent.favicon) || "/favicon.svg";
 const logoSrc = imgSrc(globalContent.logo);
+// iOS ignores SVG touch icons: only emit one when the logo is a raster image.
+const appleTouchIcon = /\.png$/i.test(logoSrc)
+  ? absoluteUrl(origin, logoSrc)
+  : undefined;
+
+// Share image: page override -> site default -> logo. No bare-origin
+// fallback: an invalid og:image is worse than none.
+const resolveImage = (v?: string) => {
+  const s = (v || "").trim();
+  return s ? absoluteUrl(origin, s) : undefined;
+};
+const ogImageSrc =
+  resolveImage(pageImage) ||
+  resolveImage(imgSrc(globalContent.og_image)) ||
+  resolveImage(logoSrc);
+const ogImage = globalContent.og_image;
+const ogImageAlt =
+  ogImage && typeof ogImage === "object" && cleanText(ogImage.alt)
+    ? String(ogImage.alt)
+    : siteName;
+
+const themeColor = isHex(globalContent.theme_color)
+  ? String(globalContent.theme_color).trim()
+  : "#2e5249";
+
+const atHandle = (v: unknown) => {
+  const s = gtext(v).replace(/^@/, "");
+  return s ? "@" + s : undefined;
+};
+const twitterSite = atHandle(globalContent.twitter_site);
+const twitterCreator = atHandle(globalContent.twitter_creator);
+
+const robots = robotsContent(robotsOption, noindex);
+// Draft content must never be indexed: the preview deployment and the local
+// dev server always answer noindex, whatever the editor chose.
+const previewEnv = import.meta.env.DEV || import.meta.env.IS_PREVIEW === "true";
+const robotsFinal = previewEnv ? "noindex, nofollow" : robots;
+const canonical = canonicalOverride
+  ? absoluteUrl(origin, canonicalOverride.trim())
+  : absoluteUrl(origin, path);
+
+const geo = geoFrom(globalContent.geo_latitude, globalContent.geo_longitude);
+const site: SiteInfo = {
+  origin: origin,
+  siteName: siteName,
+  locale: "fr_FR",
+  logo: logoSrc ? absoluteUrl(origin, logoSrc) : undefined,
+  ogImage: ogImageSrc,
+  address: gtext(globalContent.footer_address) || undefined,
+  phone: gtext(globalContent.footer_phone) || undefined,
+  email: gtext(globalContent.footer_email) || undefined,
+  tagline: gtext(globalContent.footer_tagline) || undefined,
+  sameAs: lines(globalContent.same_as).filter((u) => /^https?:\/\//i.test(u)),
+  geoLat: geo ? geo.lat : undefined,
+  geoLon: geo ? geo.lon : undefined,
+};
+
+const graph: SchemaNode[] = [
+  organizationSchema(site),
+  websiteSchema(site),
+].concat(extraSchema, parseManualSchema(globalContent.schema_manual));
+const crumbs = breadcrumbSchema(origin, breadcrumbs);
+if (crumbs) graph.push(crumbs);
 
 const menuItems = (
   Array.isArray(globalContent.menu_items) && globalContent.menu_items.length
@@ -87,12 +197,42 @@ const colorVars = (
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="generator" content={Astro.generator} />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>{title}</title>
     <meta name="description" content={description} />
-    {noindex && <meta name="robots" content="noindex, nofollow" />}
-    <meta name="theme-color" content="#2e5249" />
+    <meta name="robots" content={robotsFinal} />
+    <meta name="googlebot" content={robotsFinal} />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="canonical" href={canonical} />
+
+    {/* Open Graph — Facebook, WhatsApp, LinkedIn, Discord, iMessage… */}
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {ogImageSrc && <meta property="og:image" content={ogImageSrc} />}
+    {ogImageSrc && <meta property="og:image:alt" content={ogImageAlt} />}
+
+    {/* X / Twitter */}
+    <meta
+      name="twitter:card"
+      content={ogImageSrc ? "summary_large_image" : "summary"}
+    />
+    {twitterSite && <meta name="twitter:site" content={twitterSite} />}
+    {twitterCreator && <meta name="twitter:creator" content={twitterCreator} />}
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {ogImageSrc && <meta name="twitter:image" content={ogImageSrc} />}
+    {ogImageSrc && <meta name="twitter:image:alt" content={ogImageAlt} />}
+
+    <meta name="theme-color" content={themeColor} />
+    <meta name="color-scheme" content="light" />
+    <meta name="format-detection" content="telephone=no" />
     <link rel="icon" type="image/svg+xml" href={favicon} />
+    {appleTouchIcon && <link rel="apple-touch-icon" href={appleTouchIcon} />}
     {colorVars && <style set:html={`:root{${colorVars}}`} />}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -104,7 +244,10 @@ const colorVars = (
       href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=La+Belle+Aurore&display=swap"
       rel="stylesheet"
     />
-    <title>{title}</title>
+    <script
+      type="application/ld+json"
+      set:html={jsonLd({ "@context": "https://schema.org", "@graph": graph })}
+    />
   </head>
   <body>
     <header class="site-header">

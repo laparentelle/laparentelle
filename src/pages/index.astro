@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import ContactForm from "../components/ContactForm.astro";
 import StoryblokComponent from "@storyblok/astro/StoryblokComponent.astro";
 import { getPageStory } from "../lib/storyblok";
+import { seoPropsFrom } from "../lib/seo";
 
 let story: any = null;
 const hasToken =
@@ -20,9 +21,18 @@ if (hasToken) {
 const content = story?.content;
 const seoTitle = content?.seo_title ?? undefined;
 const seoDescription = content?.seo_description ?? undefined;
+const seo = seoPropsFrom(content);
 ---
 
-<BaseLayout title={seoTitle} description={seoDescription}>
+<BaseLayout
+  title={seoTitle}
+  description={seoDescription}
+  robots={seo.robots}
+  image={seo.image}
+  ogType={seo.ogType}
+  canonical={seo.canonical}
+  schema={seo.schema}
+>
   {
     content ? (
       <StoryblokComponent blok={content} />

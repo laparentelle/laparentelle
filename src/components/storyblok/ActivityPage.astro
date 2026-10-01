@@ -7,7 +7,16 @@ import {
   fetchPractitioners,
   sessionTiming,
 } from "../../lib/sessions";
+import { parseSessionDate } from "../../lib/date";
+import { getGlobalStory } from "../../lib/storyblok";
 import { countBookingsBulk, isBookingsConfigured } from "../../lib/bookings";
+import {
+  absoluteUrl,
+  eventSchema,
+  jsonLd,
+  siteInfoFromGlobal,
+  siteOrigin,
+} from "../../lib/seo";
 
 interface Props {
   blok: {
@@ -59,6 +68,34 @@ const upcomingLeft = (uid: string, capacity?: number) => {
   if (!bookingsOn || !capacity) return null;
   return Math.max(0, capacity - (upcomingCounts[uid] ?? 0));
 };
+
+// Event schema for the listed slots (JSON-LD is valid in the body).
+const origin = siteOrigin(Astro.url, Astro.site);
+const site = siteInfoFromGlobal(
+  origin,
+  (await getGlobalStory())?.content,
+  "La Parent'elle",
+);
+const dayKeyOf = (d: Date) => d.toLocaleDateString("en-CA");
+const eventNodes = upcoming.slice(0, 12).flatMap((s) => {
+  const start = parseSessionDate(s.start);
+  if (!start) return [];
+  const names = (s.people ?? [])
+    .map((uuid) => peopleByUuid.get(uuid))
+    .filter((n): n is string => Boolean(n));
+  return [
+    eventSchema(site, {
+      title: s.title || String(blok.title || ""),
+      start: start,
+      minutes: typeof s.duration === "number" && s.duration > 0 ? s.duration : 60,
+      url: absoluteUrl(origin, "/programme-du-mois?date=" + dayKeyOf(start)),
+      description:
+        typeof s.note === "string" && s.note.trim() ? s.note.trim() : undefined,
+      capacity: !s.external_booking && s.capacity ? s.capacity : undefined,
+      performers: names.map((name) => ({ name: name })),
+    }),
+  ];
+});
 ---
 
 <article class="activity-page" {...storyblokEditable(blok)}>
@@ -149,6 +186,12 @@ const upcomingLeft = (uid: string, capacity?: number) => {
   <p class="back">
     <a href="/activites">← Toutes les activités</a>
   </p>
+  {eventNodes.length > 0 && (
+    <script
+      type="application/ld+json"
+      set:html={jsonLd({ "@context": "https://schema.org", "@graph": eventNodes })}
+    />
+  )}
 </article>
 
 <style>
