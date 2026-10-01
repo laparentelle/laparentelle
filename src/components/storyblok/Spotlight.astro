@@ -1,6 +1,7 @@
 ---
 import { storyblokEditable } from "@storyblok/astro";
 import { resolveLink, imgSrc, imgAlt } from "../../lib/links";
+import SbImage from "../SbImage.astro";
 import Button from "../Button.astro";
 
 interface Props {
@@ -22,7 +23,13 @@ const src = imgSrc(blok.image);
   <div class="spotlight-card">
     {src && (
       <figure class="spotlight-media frame-organic">
-        <img src={src} alt={imgAlt(blok.image)} loading="lazy" />
+        <SbImage
+          src={src}
+          alt={imgAlt(blok.image)}
+          widths={[480, 800, 1200]}
+          sizes="(max-width: 700px) 100vw, 600px"
+          loading="lazy"
+        />
       </figure>
     )}
     <div class="spotlight-copy">
@@ -59,7 +66,7 @@ const src = imgSrc(blok.image);
     min-height: 100%;
   }
 
-  .spotlight-media img {
+  .spotlight-media :global(img) {
     width: 100%;
     height: 100%;
     object-fit: cover;

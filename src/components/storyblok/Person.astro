@@ -12,6 +12,7 @@ import {
 } from "../../lib/seo";
 import Button from "../Button.astro";
 import ContactForm from "../ContactForm.astro";
+import SbImage from "../SbImage.astro";
 
 interface Props {
   blok: {
@@ -76,7 +77,13 @@ const bookingHref =
   <header class="person-head">
     {src && (
       <figure class="person-photo frame-organic">
-        <img src={src} alt={imgAlt(blok.photo, blok.name)} loading="eager" />
+        <SbImage
+          src={src}
+          alt={imgAlt(blok.photo, blok.name)}
+          widths={[480, 800]}
+          sizes="(max-width: 700px) 100vw, 480px"
+          loading="eager"
+        />
       </figure>
     )}
     <div>
@@ -175,8 +182,9 @@ const bookingHref =
     margin: 0;
   }
 
-  .person-photo img {
+  .person-photo :global(img) {
     width: 100%;
+    height: auto;
     aspect-ratio: 3 / 4;
     object-fit: cover;
     display: block;

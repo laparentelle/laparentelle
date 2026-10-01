@@ -85,6 +85,9 @@
   z-index: 1;
   display: block;
   width: 100%;
+  /* Required now that <img> tags carry width/height attributes (Astro
+     <Image>): without it the attribute height renders literally. */
+  height: auto;
 }
 
 .frame-organic--b {

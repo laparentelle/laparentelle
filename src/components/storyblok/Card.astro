@@ -1,6 +1,7 @@
 ---
 import { storyblokEditable } from "@storyblok/astro";
 import { resolveLink, imgSrc, imgAlt } from "../../lib/links";
+import SbImage from "../SbImage.astro";
 
 interface Props {
   blok: {
@@ -18,7 +19,14 @@ const src = imgSrc(blok.image);
 
 <article class="card" {...storyblokEditable(blok)}>
   {src && (
-    <img class="card-img" src={src} alt={imgAlt(blok.image, blok.title)} loading="lazy" />
+    <SbImage
+      class="card-img"
+      src={src}
+      alt={imgAlt(blok.image, blok.title)}
+      widths={[400, 800]}
+      sizes="(max-width: 700px) 100vw, 400px"
+      loading="lazy"
+    />
   )}
   <div class="card-body">
     {blok.title && <h3 class="card-title">{blok.title}</h3>}
@@ -47,8 +55,9 @@ const src = imgSrc(blok.image);
     box-shadow: var(--shadow-neu-lg);
   }
 
-  .card-img {
+  :global(.card-img) {
     width: 100%;
+    height: auto;
     aspect-ratio: 3 / 1;
     object-fit: cover;
     display: block;

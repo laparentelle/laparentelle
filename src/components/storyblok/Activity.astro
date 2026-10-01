@@ -1,6 +1,7 @@
 ---
 import { storyblokEditable } from "@storyblok/astro";
 import { imgSrc, imgAlt } from "../../lib/links";
+import SbImage from "../SbImage.astro";
 import Button from "../Button.astro";
 import {
   fetchSession,
@@ -74,7 +75,7 @@ const planningHref =
 {
   session && (
     <article class="activity" {...storyblokEditable(blok)}>
-      {src && <img class="activity-img" src={src} alt={imgAlt(blok.image, session.title)} loading="lazy" />}
+      {src && <SbImage class="activity-img" src={src} alt={imgAlt(blok.image, session.title)} widths={[400, 800]} sizes="(max-width: 700px) 100vw, 400px" loading="lazy" />}
       <div class="activity-body">
         {(TYPE_LABEL[session.type ?? ""] ?? session.type) && (
           <p class="eyebrow">{TYPE_LABEL[session.type ?? ""] ?? session.type}</p>
@@ -113,8 +114,9 @@ const planningHref =
     flex-direction: column;
   }
 
-  .activity-img {
+  :global(.activity-img) {
     width: 100%;
+    height: auto;
     aspect-ratio: 8 / 5;
     object-fit: cover;
     display: block;

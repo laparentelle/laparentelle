@@ -314,3 +314,26 @@ body:has(dialog[open]) .site-header {
   font-size: 0.9rem;
   color: var(--c-ink-soft);
 }
+
+/* Scroll reveals (see src/lib/animations.ts). Hidden state only applies
+   when JS runs — no-JS visitors and reduced-motion users see everything. */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.8s ease,
+    transform 0.8s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.js [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

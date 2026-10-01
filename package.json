@@ -16,8 +16,8 @@
     "@astrojs/vercel": "^11.0.11",
     "@storyblok/astro": "^10.3.2",
     "astro": "^7.3.4",
-    "gsap": "^3.13.0",
-    "resend": "^6.28.1"
+    "resend": "^6.28.1",
+    "sharp": "^0.35.5"
   },
   "allowScripts": {
     "esbuild": true

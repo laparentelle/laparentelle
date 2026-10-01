@@ -1,24 +1,64 @@
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+// Vanilla scroll animation. Only import/call this from components that
+// actually animate — there is no animation library anymore on purpose
+// (a 46 KB GSAP bundle for fades was the largest unused-JS offender).
 
-// Only import/call this from components that actually animate.
-gsap.registerPlugin(ScrollTrigger);
-
-// Simple opt-in reveal: add `data-reveal` to elements.
+/** Fade-slide reveal: add `data-reveal` to elements (see global.css). */
 export function initReveals() {
-  const els = gsap.utils.toArray<HTMLElement>("[data-reveal]");
-  els.forEach((el) => {
-    gsap.from(el, {
-      y: 24,
-      opacity: 0,
-      duration: 0.8,
-      ease: "power2.out",
-      scrollTrigger: {
-        trigger: el,
-        start: "top 85%",
-      },
-    });
-  });
+  const els = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-reveal]"),
+  );
+  if (els.length === 0) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!("IntersectionObserver" in window)) {
+    for (const el of els) el.classList.add("is-visible");
+    return;
+  }
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          (entry.target as HTMLElement).classList.add("is-visible");
+          io.unobserve(entry.target);
+        }
+      }
+    },
+    // Roughly the old "top 85%" trigger: reveal once ~15% is visible.
+    { rootMargin: "0px 0px -15% 0px" },
+  );
+  for (const el of els) io.observe(el);
 }
 
-export { gsap, ScrollTrigger };
+/**
+ * Hero parallax: drift `.hero-bg` down as the hero scrolls out.
+ * One rAF-batched read/write per frame — no forced reflow.
+ */
+export function initHeroParallax() {
+  const bg = document.querySelector<HTMLElement>(".hero-blok .hero-bg");
+  const hero = bg?.closest<HTMLElement>(".hero-blok");
+  if (!bg || !hero) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  let height = Math.max(1, hero.offsetHeight);
+  let ticking = false;
+  const update = () => {
+    ticking = false;
+    const progress = Math.min(1, Math.max(0, window.scrollY / height));
+    // Same 0 → 18% range as the previous scrubbed tween.
+    bg.style.transform =
+      "translate3d(0," + (progress * 18).toFixed(3) + "%,0)";
+  };
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    },
+    { passive: true },
+  );
+  window.addEventListener("resize", () => {
+    height = Math.max(1, hero.offsetHeight);
+    update();
+  });
+  update();
+}

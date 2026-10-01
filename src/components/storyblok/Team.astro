@@ -1,6 +1,7 @@
 ---
 import { storyblokEditable, useStoryblokApi } from "@storyblok/astro";
 import { imgSrc, imgAlt } from "../../lib/links";
+import SbImage from "../SbImage.astro";
 
 interface Props {
   blok: {
@@ -59,7 +60,14 @@ const members = ((data?.stories ?? []) as any[])
     {members.map((m) => (
       <a class="member-card" href={m.url} data-tags={m.tags.map((t) => t.toLowerCase()).join("|")}>
         {imgSrc(m.photo) && (
-          <img class="member-photo" src={imgSrc(m.photo)} alt={imgAlt(typeof m.photo === "string" ? null : m.photo, m.name)} loading="lazy" />
+          <SbImage
+            class="member-photo"
+            src={imgSrc(m.photo)}
+            alt={imgAlt(typeof m.photo === "string" ? null : m.photo, m.name)}
+            widths={[320, 640]}
+            sizes="(max-width: 700px) 50vw, 300px"
+            loading="lazy"
+          />
         )}
         <span class="member-body">
           <strong class="member-name">{m.name}</strong>
@@ -145,8 +153,9 @@ const members = ((data?.stories ?? []) as any[])
     box-shadow: var(--shadow-neu-lg);
   }
 
-  .member-photo {
+  :global(.member-photo) {
     width: 100%;
+    height: auto;
     aspect-ratio: 3 / 4;
     object-fit: cover;
     display: block;

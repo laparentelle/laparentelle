@@ -1,4 +1,5 @@
 ---
+import "../styles/fonts.css";
 import "../styles/global.css";
 import Button from "../components/Button.astro";
 import BookDialog from "../components/BookDialog.astro";
@@ -234,16 +235,9 @@ const colorVars = (
     <link rel="icon" type="image/svg+xml" href={favicon} />
     {appleTouchIcon && <link rel="apple-touch-icon" href={appleTouchIcon} />}
     {colorVars && <style set:html={`:root{${colorVars}}`} />}
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://api.fontshare.com/v2/css?f[]=sentient@400,500,700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=La+Belle+Aurore&display=swap"
-      rel="stylesheet"
-    />
+    {/* Fonts are self-hosted (see styles/fonts.css): no third-party font
+        origin left. Preconnect to the image CDN serving the eager hero. */}
+    <link rel="preconnect" href="https://a.storyblok.com" />
     <script
       type="application/ld+json"
       set:html={jsonLd({ "@context": "https://schema.org", "@graph": graph })}

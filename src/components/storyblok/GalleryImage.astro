@@ -1,6 +1,7 @@
 ---
 import { storyblokEditable } from "@storyblok/astro";
 import { imgSrc, imgAlt } from "../../lib/links";
+import SbImage from "../SbImage.astro";
 
 interface Props {
   blok: {
@@ -15,7 +16,13 @@ const src = imgSrc(blok.image);
 
 {src && (
   <figure class="gallery-item frame-organic" {...storyblokEditable(blok)}>
-    <img src={src} alt={imgAlt(blok.image, blok.caption)} loading="lazy" />
+    <SbImage
+      src={src}
+      alt={imgAlt(blok.image, blok.caption)}
+      widths={[320, 640]}
+      sizes="(max-width: 700px) 50vw, 300px"
+      loading="lazy"
+    />
     {blok.caption && <figcaption>{blok.caption}</figcaption>}
   </figure>
 )}
@@ -25,7 +32,7 @@ const src = imgSrc(blok.image);
     margin: 0;
   }
 
-  .gallery-item img {
+  .gallery-item :global(img) {
     width: 100%;
     height: 100%;
     object-fit: cover;

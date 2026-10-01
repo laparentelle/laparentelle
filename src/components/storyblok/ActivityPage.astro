@@ -2,6 +2,7 @@
 import { storyblokEditable, renderRichText } from "@storyblok/astro";
 import { imgSrc, imgAlt } from "../../lib/links";
 import Button from "../Button.astro";
+import SbImage from "../SbImage.astro";
 import {
   fetchSessionsByActivity,
   fetchPractitioners,
@@ -111,7 +112,13 @@ const eventNodes = upcoming.slice(0, 12).flatMap((s) => {
     </div>
     {src && (
       <figure class="activity-photo">
-        <img src={src} alt={imgAlt(blok.photo, blok.title)} loading="eager" />
+        <SbImage
+          src={src}
+          alt={imgAlt(blok.photo, blok.title)}
+          widths={[480, 800, 1200]}
+          sizes="(max-width: 700px) 100vw, 640px"
+          loading="eager"
+        />
       </figure>
     )}
   </header>
@@ -238,8 +245,9 @@ const eventNodes = upcoming.slice(0, 12).flatMap((s) => {
     margin: 0;
   }
 
-  .activity-photo img {
+  .activity-photo :global(img) {
     width: 100%;
+    height: auto;
     aspect-ratio: 4 / 3;
     object-fit: cover;
     border-radius: var(--radius-card);

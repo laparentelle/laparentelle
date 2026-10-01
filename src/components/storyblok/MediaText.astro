@@ -1,6 +1,7 @@
 ---
 import { storyblokEditable, renderRichText } from "@storyblok/astro";
 import { resolveLink, imgSrc, imgAlt } from "../../lib/links";
+import SbImage from "../SbImage.astro";
 import Button from "../Button.astro";
 
 interface Props {
@@ -23,7 +24,13 @@ const src = imgSrc(blok.image);
 <section class:list={["media-text-blok", "blok-section", { reverse: blok.reverse }]} {...storyblokEditable(blok)}>
   {src && (
     <figure class="media frame-organic">
-      <img src={src} alt={imgAlt(blok.image)} loading="lazy" />
+      <SbImage
+        src={src}
+        alt={imgAlt(blok.image)}
+        widths={[480, 800, 1200]}
+        sizes="(max-width: 700px) 100vw, 600px"
+        loading="lazy"
+      />
     </figure>
   )}
   <div class="copy">

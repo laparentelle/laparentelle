@@ -54,6 +54,12 @@ export default defineConfig({
   // Canonical origin for absolute URLs (canonical, og:url, sitemap).
   // Set PUBLIC_SITE_URL in `.env` / Vercel to the production domain.
   site: process.env.PUBLIC_SITE_URL ?? env.PUBLIC_SITE_URL,
+  image: {
+    // Allow <Image> optimization for Storyblok CDN assets. In static
+    // production builds variants are generated at build time (sharp);
+    // in preview they are served on demand via Vercel Image Optimization.
+    remotePatterns: [{ protocol: "https", hostname: "a.storyblok.com" }],
+  },
   output: isPreview ? 'server' : 'static',
   adapter: vercel(),
   integrations: [
