@@ -660,7 +660,8 @@ const bookJs = (s: (typeof sessions)[number], label: string) =>
   .badge--activite {
     background: var(--c-gold-dark);
     border-color: var(--c-gold-dark);
-    color: #fff;
+    /* White on gold is 2.4:1 — pine-deep keeps the gold look at 5.0:1. */
+    color: var(--c-pine-deep);
   }
 
   .badge--sport {
