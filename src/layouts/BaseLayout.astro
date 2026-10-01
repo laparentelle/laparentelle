@@ -3,6 +3,11 @@ import "../styles/fonts.css";
 import "../styles/global.css";
 import Button from "../components/Button.astro";
 import BookDialog from "../components/BookDialog.astro";
+// Above-the-fold faces, preloaded so first paint usually has them already.
+import sentient500 from "../assets/fonts/sentient-500.woff2?url";
+import jost400 from "../assets/fonts/jost-400-latin.woff2?url";
+import jost500 from "../assets/fonts/jost-500-latin.woff2?url";
+import jost600 from "../assets/fonts/jost-600-latin.woff2?url";
 import { getGlobalStory } from "../lib/storyblok";
 import { resolveLink, imgSrc, lines } from "../lib/links";
 import {
@@ -124,9 +129,27 @@ const robots = robotsContent(robotsOption, noindex);
 // dev server always answer noindex, whatever the editor chose.
 const previewEnv = import.meta.env.DEV || import.meta.env.IS_PREVIEW === "true";
 const robotsFinal = previewEnv ? "noindex, nofollow" : robots;
-const canonical = canonicalOverride
-  ? absoluteUrl(origin, canonicalOverride.trim())
-  : absoluteUrl(origin, path);
+// Convention: no trailing slash (homepage `/` excepted). Site-relative
+// overrides are normalised; absolute overrides on our own origin get the
+// same treatment, anything else passes through untouched.
+const canonicalFor = (override: string) => {
+  const t = override.trim();
+  if (/^(https?:)?\/\//i.test(t)) {
+    try {
+      const u = new URL(t, origin);
+      if (u.origin === origin)
+        return u.origin + normalisePath(u.pathname) + u.search + u.hash;
+    } catch {
+      /* fall through to the raw value */
+    }
+    return t;
+  }
+  return absoluteUrl(origin, t);
+};
+const canonical =
+  canonicalOverride && canonicalOverride.trim()
+    ? canonicalFor(canonicalOverride)
+    : absoluteUrl(origin, path);
 
 const geo = geoFrom(globalContent.geo_latitude, globalContent.geo_longitude);
 const site: SiteInfo = {
@@ -199,6 +222,14 @@ const colorVars = (
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {/* Runs before any body content is parsed: the `html:not(.js)` no-JS
+        fallback rules must never match when JS is on, otherwise the mobile
+        nav paints expanded and collapses a beat later (layout shift).
+        is:inline keeps this a synchronous classic script — Astro would
+        otherwise bundle it as a deferred module, which runs too late. */}
+    <script is:inline>
+      document.documentElement.classList.add("js");
+    </script>
 
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -238,6 +269,12 @@ const colorVars = (
     {/* Fonts are self-hosted (see styles/fonts.css): no third-party font
         origin left. Preconnect to the image CDN serving the eager hero. */}
     <link rel="preconnect" href="https://a.storyblok.com" />
+    {/* Above-the-fold faces: preloaded so first paint usually has the final
+        fonts and no swap (hence no shift) happens at all. */}
+    <link rel="preload" as="font" type="font/woff2" crossorigin href={sentient500} />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href={jost400} />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href={jost500} />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href={jost600} />
     <script
       type="application/ld+json"
       set:html={jsonLd({ "@context": "https://schema.org", "@graph": graph })}
@@ -302,7 +339,7 @@ const colorVars = (
     <script>
       // Overflow-aware nav: the hamburger appears whenever the links no
       // longer fit, whatever the link count or viewport width.
-      document.documentElement.classList.add("js");
+      // (The `js` class itself is set by the head script, before first paint.)
       const nav = document.querySelector(".site-nav");
       const links = nav?.querySelector(".nav-links");
       const toggle = nav?.querySelector(".nav-toggle");

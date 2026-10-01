@@ -1,6 +1,6 @@
 ---
 import { storyblokEditable, renderRichText } from "@storyblok/astro";
-import { imgSrc, imgAlt } from "../../lib/links";
+import { imgSrc, imgAlt, resolveLink } from "../../lib/links";
 import { adminEmail } from "../../lib/contacts";
 import { getGlobalStory } from "../../lib/storyblok";
 import {
@@ -69,7 +69,7 @@ const tarifs = blok.tarifs ? renderRichText(blok.tarifs) : "";
 const src = imgSrc(blok.photo);
 const bookingHref =
   blok.booking_link?.cached_url || blok.booking_link?.url
-    ? (blok.booking_link.url ?? `/${blok.booking_link.cached_url}`)
+    ? resolveLink(blok.booking_link)
     : null;
 ---
 

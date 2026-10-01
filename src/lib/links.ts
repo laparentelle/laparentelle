@@ -14,7 +14,12 @@ export function resolveLink(link?: Multilink | string | null): string {
   if (link.url) return link.url;
   const url = link.cached_url ?? "#";
   if (url === "home") return "/";
-  return url.startsWith("/") || url.startsWith("http") || url === "#" ? url : `/${url}`;
+  // Convention: page URLs never end with a trailing slash (homepage `/`
+  // excepted). Storyblok `cached_url` values sometimes carry one.
+  if (url === "#") return url;
+  if (url.startsWith("http")) return url.replace(/\/+$/, "");
+  if (url.startsWith("/")) return url.length > 1 ? url.replace(/\/+$/, "") : url;
+  return `/${url.replace(/\/+$/, "")}`;
 }
 
 /** Image fields may be a plain URL string (API-written) or an asset object (editor). */

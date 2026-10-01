@@ -25,21 +25,30 @@ export function siteOrigin(requestUrl: URL, site?: URL): string {
   return raw.replace(/\/+$/, "");
 }
 
-/** Site-relative path to absolute URL. External URLs pass through. */
-export function absoluteUrl(origin: string, path: string | null | undefined): string {
-  if (!path) return origin;
-  if (/^(https?:)?\/\//i.test(path)) return path;
-  if (path.indexOf("mailto:") === 0) return path;
-  const clean = path.charAt(0) === "/" ? path : "/" + path;
-  return origin + clean;
-}
-
 /** Canonical path form: single leading slash, no query/hash/trailing slash. */
 export function normalisePath(pathname: string): string {
   const noQuery = pathname.split(/[?#]/)[0];
   const single = noQuery.replace(/\/{2,}/g, "/");
   if (single === "" || single === "/") return "/";
   return single.replace(/\/+$/, "");
+}
+
+/**
+ * Convention: page URLs never end with a trailing slash (the homepage `/`
+ * is the only exception). Site-relative `path` is normalised to that form;
+ * query strings and hashes are preserved (`/planning?date=…` keeps working).
+ * External URLs pass through untouched.
+ */
+export function absoluteUrl(origin: string, path: string | null | undefined): string {
+  if (!path) return origin;
+  if (/^(https?:)?\/\//i.test(path)) return path;
+  if (path.charAt(0) === "#") return path;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(path)) return path;
+  const cut = path.search(/[?#]/);
+  const head = cut === -1 ? path : path.slice(0, cut);
+  const tail = cut === -1 ? "" : path.slice(cut);
+  const clean = head.charAt(0) === "/" ? head : "/" + head;
+  return origin + normalisePath(clean) + tail;
 }
 
 /* --------------------------------------------------------------- robots -- */

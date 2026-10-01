@@ -12,16 +12,21 @@ const { blok } = Astro.props;
 ---
 
 <div class="stat" {...storyblokEditable(blok)}>
-  {blok.value && <p class="stat-value">{blok.value}</p>}
-  {blok.label && <p class="stat-label">{blok.label}</p>}
+  {blok.label && <dt class="stat-label">{blok.label}</dt>}
+  {blok.value && <dd class="stat-value">{blok.value}</dd>}
 </div>
 
 <style>
   .stat {
     text-align: center;
+    display: flex;
+    flex-direction: column;
   }
 
+  /* DOM order is label-then-value (valid dt/dd sequence); the value stays
+     visually on top, exactly as before. */
   .stat-value {
+    order: -1;
     margin: 0;
     font-size: clamp(1.8rem, 4vw, 2.75rem);
     line-height: 1;

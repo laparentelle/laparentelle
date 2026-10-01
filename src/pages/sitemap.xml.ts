@@ -24,7 +24,8 @@ function storyPath(story: { full_slug?: string }): string | null {
   const slug = story.full_slug || "";
   if (!slug) return null;
   if (slug === "home") return "/";
-  return "/" + slug.replace(/\/$/, "");
+  // Same no-trailing-slash form as canonical URLs.
+  return normalisePath("/" + slug);
 }
 
 // Raw fetch (not `useStoryblokApi`, which is page-context only): this also

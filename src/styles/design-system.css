@@ -9,7 +9,9 @@
   /* Brand */
   --c-pine: #2e5249;
   --c-pine-deep: #203b34;
-  --c-pine-soft: #5f7f73;
+  /* Muted eucalyptus for small text: dark enough for 4.5:1 on cream (#faf6ee),
+     cards (#fffdf7) and slot tints (#edf1e6, #e7ecea). Do not lighten. */
+  --c-pine-soft: #4f6f63;
   --c-sage: #dde7d4;
   --c-sage-soft: #edf1e6;
 
@@ -37,9 +39,9 @@
   --max: 72rem;
 
   /* Typography */
-  --font-display: "Sentient", Georgia, serif;
-  --font-body: "Jost", "Avenir Next", system-ui, sans-serif;
-  --font-hand: "La Belle Aurore", cursive;
+  --font-display: "Sentient", "Sentient-fb", Georgia, serif;
+  --font-body: "Jost", "Jost-fb", "Avenir Next", system-ui, sans-serif;
+  --font-hand: "La Belle Aurore", "Hand-fb", cursive;
 
   /* Shape */
   --radius-card: 1.25rem;

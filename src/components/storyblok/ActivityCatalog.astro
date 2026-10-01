@@ -1,6 +1,6 @@
 ---
 import { storyblokEditable, useStoryblokApi } from "@storyblok/astro";
-import { imgSrc, imgAlt } from "../../lib/links";
+import { imgSrc, imgAlt, resolveLink } from "../../lib/links";
 import SbImage from "../SbImage.astro";
 import { fetchAllSessionStories, sessionTiming } from "../../lib/sessions";
 import { countBookingsBulk, isBookingsConfigured } from "../../lib/bookings";
@@ -37,7 +37,7 @@ const items = ((data?.stories ?? []) as any[])
     animator: s.content?.animator ?? "",
     photo: s.content?.photo ?? "",
     tags: (s.tag_list ?? []) as string[],
-    url: `/${s.full_slug}`,
+    url: resolveLink({ cached_url: s.full_slug }),
   }))
   .sort((a, b) => a.title.localeCompare(b.title, "fr"));
 

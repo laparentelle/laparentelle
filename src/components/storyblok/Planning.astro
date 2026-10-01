@@ -889,7 +889,8 @@ const bookJs = (s: (typeof sessions)[number], label: string) =>
   }
 
   .slot-spots.is-low {
-    color: #b3761a;
+    /* Low-availability amber: dark enough for 4.5:1 on white and slot tints. */
+    color: #8f5c12;
   }
 
   .slot-spots.is-full {
@@ -1012,7 +1013,8 @@ const bookJs = (s: (typeof sessions)[number], label: string) =>
   }
 
   .spots.is-low {
-    color: #b3761a;
+    /* Same contrast-safe amber as .slot-spots.is-low above. */
+    color: #8f5c12;
   }
 
   .spots.is-full {

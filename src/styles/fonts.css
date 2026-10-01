@@ -1,5 +1,82 @@
 /* Self-hosted fonts (display=swap everywhere). Subsets: latin + latin-ext. */
 
+/* Metric-matched fallbacks: when the webfont hasn't arrived yet, the
+   fallback below occupies ~the same width, so swapping fonts later moves
+   almost nothing (CLS). Values measured in-browser per weight; the Georgia
+   face covers macOS/Windows, DejaVu Linux, Arial/Roboto Android & co. */
+@font-face {
+  font-family: 'Sentient-fb';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: local('Georgia');
+  size-adjust: 108%;
+}
+@font-face {
+  font-family: 'Sentient-fb';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: local('DejaVu Serif');
+  size-adjust: 120%;
+}
+@font-face {
+  font-family: 'Jost-fb';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Arial'), local('Roboto'), local('Helvetica Neue');
+  size-adjust: 96.6%;
+}
+@font-face {
+  font-family: 'Jost-fb';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('DejaVu Sans');
+  size-adjust: 96%;
+}
+@font-face {
+  font-family: 'Jost-fb';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: local('Arial'), local('Roboto'), local('Helvetica Neue');
+  size-adjust: 99.9%;
+}
+@font-face {
+  font-family: 'Jost-fb';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: local('DejaVu Sans');
+  size-adjust: 100%;
+}
+@font-face {
+  font-family: 'Jost-fb';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Arial'), local('Roboto'), local('Helvetica Neue');
+  size-adjust: 102.3%;
+}
+@font-face {
+  font-family: 'Jost-fb';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('DejaVu Sans');
+  size-adjust: 102%;
+}
+@font-face {
+  font-family: 'Hand-fb';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Apple Chancery'), local('Segoe Script'), local('Comic Sans MS');
+  size-adjust: 98%;
+}
+
 @font-face {
   font-family: 'Sentient';
   font-style: normal;

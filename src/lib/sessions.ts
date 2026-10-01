@@ -237,7 +237,7 @@ export async function fetchPractitioners(
       name: (story.content?.name as string) ?? (story.name as string) ?? "",
       email: story.content?.email as string | undefined,
       url: (story.content?.page_enabled !== false && story.full_slug
-        ? `/${story.full_slug}`
+        ? resolveLink({ cached_url: story.full_slug as string })
         : undefined),
       bookingUrl: bookingHref === "#" ? undefined : bookingHref,
     });

@@ -51,6 +51,9 @@ const dropGuideAssets = () => ({
 
 // https://astro.build/config
 export default defineConfig({
+  // No trailing slashes anywhere (sitemap, canonicals, internal links and
+  // robots.txt all use the slash-free form; `/` alone is the homepage).
+  trailingSlash: 'never',
   // Canonical origin for absolute URLs (canonical, og:url, sitemap).
   // Set PUBLIC_SITE_URL in `.env` / Vercel to the production domain.
   site: process.env.PUBLIC_SITE_URL ?? env.PUBLIC_SITE_URL,

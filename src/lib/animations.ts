@@ -60,5 +60,8 @@ export function initHeroParallax() {
     height = Math.max(1, hero.offsetHeight);
     update();
   });
-  update();
+  // No transform before the first scroll: writing one during load would put
+  // a needless style mutation (and a potential layout-shift entry) in the
+  // critical window. At scrollY 0 the transform is the identity anyway.
+  if (window.scrollY > 0) update();
 }

@@ -1,6 +1,6 @@
 ---
 import { storyblokEditable, renderRichText } from "@storyblok/astro";
-import { imgSrc, imgAlt } from "../../lib/links";
+import { imgSrc, imgAlt, resolveLink } from "../../lib/links";
 import Button from "../Button.astro";
 import SbImage from "../SbImage.astro";
 import {
@@ -42,7 +42,7 @@ const description = blok.description ? renderRichText(blok.description) : "";
 const src = imgSrc(blok.image);
 const bookingHref =
   blok.booking_link?.cached_url || blok.booking_link?.url
-    ? (blok.booking_link.url ?? `/${blok.booking_link.cached_url}`)
+    ? resolveLink(blok.booking_link)
     : null;
 
 // Upcoming planning sessions linked to this activity page.
