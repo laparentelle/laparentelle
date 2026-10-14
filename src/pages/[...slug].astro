@@ -74,7 +74,7 @@ if (slug !== "equipe" && slug !== "activites") {
   {isGlobalDoc ? (
     <GlobalDoc story={story} />
   ) : content.component === "person" ? (
-    <Person blok={content} tags={story.tag_list ?? []} pageUrl={currentUrl} />
+    <Person blok={content} tags={story.tag_list ?? []} pageUrl={currentUrl} personUuid={story.uuid} />
   ) : content.component === "activity_page" ? (
     <ActivityPage blok={content} tags={story.tag_list ?? []} activityUuid={story.uuid} />
   ) : (

@@ -215,6 +215,39 @@ export async function fetchSessionsByActivity(
   return out.sort((a, b) => (a.start as string).localeCompare(b.start as string));
 }
 
+/** Upcoming sessions linked to a `person` story, soonest first. */
+export async function fetchSessionsByPerson(
+  personUuid: string,
+  from: Date = new Date(),
+): Promise<SessionRecord[]> {
+  if (!personUuid) return [];
+  // Server-side filter first: avoids pulling the whole folder per page.
+  let stories: Record<string, any>[] = [];
+  try {
+    const data = await cdnGet<{ stories: Record<string, any>[] }>("stories", {
+      starts_with: SESSIONS_FOLDER,
+      per_page: "100",
+      "filter_query[people][in]": personUuid,
+    });
+    stories = data?.stories ?? [];
+  } catch {
+    stories = [];
+  }
+  const out: SessionRecord[] = [];
+  for (const story of stories) {
+    if ((story.content as Record<string, unknown> | undefined)?.component !== "session")
+      continue;
+    const record = toSessionRecord(story);
+    if (!record || !record.start) continue;
+    // Belt and braces: the API filter may behave loosely on references.
+    if (!record.people.includes(personUuid)) continue;
+    const d = new Date(record.start);
+    if (Number.isNaN(d.getTime()) || d.getTime() < from.getTime()) continue;
+    out.push(record);
+  }
+  return out.sort((a, b) => (a.start as string).localeCompare(b.start as string));
+}
+
 /** Resolve person UUIDs to their name / email / public page. */
 export async function fetchPractitioners(
   uuids: string[],

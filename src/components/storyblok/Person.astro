@@ -13,6 +13,11 @@ import {
 import Button from "../Button.astro";
 import ContactForm from "../ContactForm.astro";
 import SbImage from "../SbImage.astro";
+import {
+  fetchSessionsByPerson,
+  sessionDayKey,
+  sessionTiming,
+} from "../../lib/sessions";
 
 interface Props {
   blok: {
@@ -33,9 +38,11 @@ interface Props {
   tags?: string[];
   /** Public URL of this page (e.g. "/equipe/laura-gleizes"). */
   pageUrl?: string;
+  /** UUID of the `person` story: used to find her upcoming sessions. */
+  personUuid?: string;
 }
 
-const { blok, tags = [], pageUrl = "" } = Astro.props;
+const { blok, tags = [], pageUrl = "", personUuid = "" } = Astro.props;
 const origin = siteOrigin(Astro.url, Astro.site);
 const site = siteInfoFromGlobal(
   origin,
@@ -78,6 +85,15 @@ const websiteHref =
   blok.website?.cached_url || blok.website?.url
     ? resolveLink(blok.website)
     : null;
+
+// Lightweight planning: her next sessions (nothing rendered when empty).
+const upcoming = await fetchSessionsByPerson(personUuid);
+const upcomingSlots = upcoming.slice(0, 4).flatMap((s) => {
+  const day = sessionDayKey(s.start);
+  if (!day || !s.start) return [];
+  const timing = sessionTiming(s.start, s.duration ?? 60);
+  return [{ title: s.title, timing, day }];
+});
 ---
 
 <article class="person" {...storyblokEditable(blok)}>
@@ -103,6 +119,24 @@ const websiteHref =
       )}
     </div>
   </header>
+
+  {upcomingSlots.length > 0 && (
+    <section class="person-block person-slots">
+      <h2>Mes prochains créneaux</h2>
+      <ul class="slot-list">
+        {upcomingSlots.map((s) => (
+          <li class="slot-row">
+            <div>
+              <strong>{s.timing.date}</strong>
+              {s.timing.range && <span> · {s.timing.range}</span>}
+              <span class="slot-title"> — {s.title}</span>
+            </div>
+            <a class="slot-link" href={`/programme-du-mois?date=${s.day}`}>Réserver</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
 
   {bio && (
     <section class="person-block">
@@ -149,7 +183,7 @@ const websiteHref =
   </aside>
 
   <section class="person-block">
-    <h2>Lui écrire un message</h2>
+    <h2>M'écrire un message</h2>
     {blok.email ? (
       <ContactForm fixedName={blok.name} fixedEmail={blok.email} />
     ) : (
@@ -223,6 +257,39 @@ const websiteHref =
   .person-block h2 {
     font-size: 1.4rem;
     margin: 0 0 0.75rem;
+  }
+
+  .slot-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+    max-width: 46rem;
+  }
+
+  .slot-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0.7rem 1rem;
+    border: 1px solid var(--c-line);
+    border-radius: 0.75rem;
+    background: #fff;
+  }
+
+  .slot-link {
+    color: var(--c-pine);
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .slot-link:hover {
+    text-decoration: underline;
   }
 
   .person-block .richtext {
