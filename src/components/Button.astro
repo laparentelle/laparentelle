@@ -23,6 +23,10 @@ const cls = [
 ]
   .filter(Boolean)
   .join(" ");
+
+// External sites (Doctolib, personal websites…) open in a new tab;
+// internal links, tel: and mailto: keep the default behavior.
+const isExternal = /^https?:\/\//i.test(href);
 ---
 
 {submit ? (
@@ -43,7 +47,7 @@ const cls = [
     </span>
   </button>
 ) : (
-  <a data-button-027="" href={href} class={cls}>
+  <a data-button-027="" href={href} class={cls} target={isExternal ? "_blank" : undefined} rel={isExternal ? "noopener" : undefined}>
     <span class="button-027__inner">
       <span class="button-027__default">
         <span class="button-027__default-bg"></span>

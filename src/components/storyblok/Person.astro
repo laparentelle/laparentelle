@@ -23,6 +23,8 @@ interface Props {
     phone?: string;
     booking_label?: string;
     booking_link?: any;
+    /** Personal website (multilink, optional). */
+    website?: any;
     availability?: string;
     bio?: any;
     prestations?: any;
@@ -70,6 +72,11 @@ const src = imgSrc(blok.photo);
 const bookingHref =
   blok.booking_link?.cached_url || blok.booking_link?.url
     ? resolveLink(blok.booking_link)
+    : null;
+// Personal website: same multilink shape as the booking link, optional.
+const websiteHref =
+  blok.website?.cached_url || blok.website?.url
+    ? resolveLink(blok.website)
     : null;
 ---
 
@@ -119,9 +126,12 @@ const bookingHref =
   )}
 
   <aside class="person-contact">
-    <h2>Prendre rendez-vous</h2>
+    <h2>Mes coordonnées</h2>
     {blok.availability && <p class="muted">{blok.availability}</p>}
     <div class="btn-row">
+      {websiteHref && (
+        <Button href={websiteHref}>Site web</Button>
+      )}
       {blok.booking_label && bookingHref && (
         <Button href={bookingHref}>{blok.booking_label}</Button>
       )}
