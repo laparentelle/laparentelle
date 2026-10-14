@@ -10,12 +10,25 @@ interface Props {
     eyebrow?: string;
     title?: string;
     intro?: string;
+    /** Optional pole preset (e.g. "Maternité"): only activities with that
+        tag are listed and the filter buttons are hidden. Empty = all. */
+    pole?: string;
   };
 }
 
 const { blok } = Astro.props;
 
-const FILTERS = ["Sport", "Atelier"];
+// Type filters read the activity tags: "Bouger son corps" matches the tag
+// the activities actually carry (a "Sport" label matched nothing).
+const FILTERS = ["Bouger son corps", "Atelier"];
+
+// Pole presets (a subset of the team poles): matched case-insensitively
+// against the activity tags. Unknown or empty = no preset.
+const POLES = ["Maternité", "Féminité", "Parentalité"];
+const preset =
+  typeof blok.pole === "string"
+    ? POLES.find((p) => p.toLowerCase() === blok.pole.trim().toLowerCase())
+    : undefined;
 
 const api = useStoryblokApi();
 const version =
@@ -39,6 +52,11 @@ const items = ((data?.stories ?? []) as any[])
     tags: (s.tag_list ?? []) as string[],
     url: resolveLink({ cached_url: s.full_slug }),
   }))
+  .filter(
+    (it) =>
+      !preset ||
+      it.tags.some((t) => String(t).toLowerCase() === preset.toLowerCase()),
+  )
   .sort((a, b) => a.title.localeCompare(b.title, "fr"));
 
 // Next upcoming planning session per activity page.
@@ -77,7 +95,7 @@ try {
   {blok.title && <h2 class="section-title">{blok.title}</h2>}
   {blok.intro && <p class="section-intro">{blok.intro}</p>}
 
-  <div class="filters" role="group" aria-label="Filtrer par type">
+  <div class="filters" role="group" aria-label="Filtrer par type" hidden={!!preset}>
     <button type="button" class="filter-btn is-active" data-filter="">Toutes</button>
     {FILTERS.map((f) => (
       <button type="button" class="filter-btn" data-filter={f.toLowerCase()}>{f === "Atelier" ? "Ateliers" : f}</button>
@@ -117,7 +135,11 @@ try {
     })}
   </div>
   {items.length === 0 && (
-    <p class="section-intro">Le programme arrive bientôt.</p>
+    <p class="section-intro">
+      {preset
+        ? `Aucune activité dans le pôle ${preset} pour le moment.`
+        : "Le programme arrive bientôt."}
+    </p>
   )}
 </section>
 
@@ -144,6 +166,11 @@ try {
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
+  }
+
+  /* A pole preset hides the whole row (author display beats [hidden]). */
+  .filters[hidden] {
+    display: none;
   }
 
   .filter-btn {

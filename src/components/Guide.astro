@@ -17,7 +17,6 @@ import personne from "../assets/guide/personne.webp";
 import personneReserver from "../assets/guide/personne-reserver.webp";
 import activitePage from "../assets/guide/activite-page.webp";
 import activitesCatalogue from "../assets/guide/activites-catalogue.webp";
-import activitesFiltreSport from "../assets/guide/activites-filtre-sport.webp";
 import contact from "../assets/guide/contact.webp";
 import mobilePlanning from "../assets/guide/mobile-planning.webp";
 import mobileEquipe from "../assets/guide/mobile-equipe.webp";
@@ -95,8 +94,8 @@ const SECTIONS = [
           seuls les contenus publiés le sont.
         </li>
         <li>
-          <strong>Regarder le résultat, pas seulement les champs.</strong> Une
-          une fiche n’est pas une page&nbsp;: une séance n’apparaît sur le site
+          <strong>Regarder le résultat, pas seulement les champs.</strong> Une 
+          fiche n’est pas une page&nbsp;: une séance n’apparaît sur le site
           que si elle est <em><em>ajoutée au planning</em></em>.
         </li>
         <li>
@@ -255,6 +254,11 @@ const SECTIONS = [
           <td>Retirer quelqu·e de l’équipe sans supprimer sa page</td>
           <td>Décocher <em>Page active</em></td>
           <td>Les réservations déjà prises sont conservées</td>
+        </tr>
+        <tr>
+          <td>Créer une page pour un seul pôle (Maternité…)</td>
+          <td>Bloc <em>Équipe</em> ou <em>Catalogue</em> de la page, champ <em>Pôle affiché</em></td>
+          <td>Ne liste que ce pôle et masque les filtres&nbsp;; vide = tout afficher</td>
         </tr>
         <tr>
           <td>Ajouter une activité</td>
@@ -729,6 +733,17 @@ const SECTIONS = [
       demandes de rendez-vous de ces séances lui parviennent.
     </p>
 
+    <h3>Une page par pôle (ex. Maternité)</h3>
+    <p>
+      Pour une page qui ne montre qu’un seul pôle, créez une page normale
+      (slug <code>maternite</code>, par exemple), ajoutez-lui un bloc
+      <em>Équipe</em> et réglez son champ <strong>Pôle affiché</strong> sur
+      <em>Maternité</em>. La page liste alors uniquement ces
+      professionnelles, et les boutons de filtre sont masqués — ils ne
+      serviraient à rien sur une page déjà filtrée. Laissez le champ vide
+      pour retrouver toute l’équipe avec ses filtres.
+    </p>
+
     <div class="card gold">
       <h3>Étiquettes&nbsp;: le vrai moteur des filtres</h3>
       <p>
@@ -741,7 +756,7 @@ const SECTIONS = [
           <em>Parentalité</em>, <em>Bouger son corps</em>.
         </li>
         <li>
-          <strong>Activités</strong>&nbsp;: <em>Atelier</em> et <em>Sport</em>.
+          <strong>Activités</strong>&nbsp;: <em>Atelier</em> et <em>Bouger son corps</em>.
         </li>
       </ul>
       <p class="muted">
@@ -842,11 +857,11 @@ const SECTIONS = [
 
     <h3>Le catalogue</h3>
     <figure class="fig">
-      <img src={activitesCatalogue.src} alt="Catalogue des activités avec les filtres Sport et Ateliers" loading="lazy" />
+      <img src={activitesCatalogue.src} alt="Catalogue des activités avec les filtres Bouger son corps et Ateliers" loading="lazy" />
       <ol class="marks">
         {
           [
-            "Les filtres <em>Toutes / Sport / Ateliers</em>&nbsp;: ils lisent les étiquettes des activités.",
+            "Les filtres <em>Toutes / Bouger son corps / Ateliers</em>&nbsp;: ils lisent les étiquettes des activités.",
             "Le titre de l’activité.",
             "L’intervenant·e.",
             "Les étiquettes, affichées sous la carte.",
@@ -861,25 +876,14 @@ const SECTIONS = [
       <figcaption>Le catalogue des activités.</figcaption>
     </figure>
 
-    <div class="card warn">
-      <h3>Attention&nbsp;: le filtre «&nbsp;Sport&nbsp;» est vide</h3>
-      <p>
-        Le catalogue propose un filtre <em>Sport</em>, mais les activités sont
-        étiquetées <em>Bouger son corps</em>&nbsp;: le filtre ne trouve rien et
-        affiche une page vide.
-      </p>
-      <figure class="fig fig-inline">
-        <img src={activitesFiltreSport.src} alt="Filtre Sport du catalogue des activités, sans aucun résultat" loading="lazy" />
-        <figcaption>Filtre «&nbsp;Sport&nbsp;»&nbsp;: aucun résultat.</figcaption>
-      </figure>
-      <p>
-        <strong>Contournement en attendant la correction</strong>&nbsp;:
-        ltoutes les activités de sport sont déjà accessibles depuis
-        «&nbsp;Toutes&nbsp;». N’ajoutez pas l’étiquette <em>Sport</em> à la
-        main&nbsp;: le libellé du filtre est issu de la liste des activités et
-        non des étiquettes, et cela ne corrigerait pas le filtre.
-      </p>
-    </div>
+    <h3>Une page par pôle (ex. Maternité)</h3>
+    <p>
+      Comme le bloc <em>Équipe</em>, le catalogue a un champ
+      <strong>Pôle affiché</strong> (<em>Maternité</em>, <em>Féminité</em>,
+      <em>Parentalité</em>)&nbsp;: réglez-le pour ne lister que les
+      activités de ce pôle, sans les boutons de filtre. Laissez-le vide
+      pour le catalogue complet.
+    </p>
 
     <p class="muted">
       Sur téléphone, la page de l’équipe passe en cartes plus étroites&nbsp;:
@@ -1216,10 +1220,6 @@ const SECTIONS = [
         Sophrologie, Yin Yoga, Yoga pré et post natal, Cercle de femmes, Atelier
         Porter Bébé, Atelier Bébé signe, Atelier Pleurs et Sommeil, Ateliers
         Éveil du tout-petit. Elles n’apparaissent pas en ligne.
-      </li>
-      <li>
-        <strong>Le filtre «&nbsp;Sport&nbsp;» du catalogue est vide</strong>, faute
-        d’activité étiquetée «&nbsp;Sport&nbsp;».
       </li>
     </ul>
   </section>

@@ -8,12 +8,22 @@ interface Props {
     eyebrow?: string;
     title?: string;
     intro?: string;
+    /** Optional pole preset (e.g. "Maternité"): only members with that tag
+        are listed and the filter buttons are hidden. Empty = whole team. */
+    pole?: string;
   };
 }
 
 const { blok } = Astro.props;
 
 const FILTERS = ["Maternité", "Féminité", "Parentalité", "Bouger son corps"];
+
+// Match the preset against the known poles (same values as the person tags,
+// case-insensitive). Unknown or empty = no preset.
+const preset =
+  typeof blok.pole === "string"
+    ? FILTERS.find((f) => f.toLowerCase() === blok.pole.trim().toLowerCase())
+    : undefined;
 
 // Team listing is always dynamic: fetch person stories from the equipe/ folder.
 const api = useStoryblokApi();
@@ -41,6 +51,11 @@ const members = ((data?.stories ?? []) as any[])
     tags: (s.tag_list ?? []) as string[],
     url: resolveLink({ cached_url: s.full_slug }),
   }))
+  .filter(
+    (m) =>
+      !preset ||
+      m.tags.some((t) => String(t).toLowerCase() === preset.toLowerCase()),
+  )
   .sort((a, b) => a.name.localeCompare(b.name, "fr"));
 ---
 
@@ -49,7 +64,7 @@ const members = ((data?.stories ?? []) as any[])
   {blok.title && <h2 class="section-title">{blok.title}</h2>}
   {blok.intro && <p class="section-intro">{blok.intro}</p>}
 
-  <div class="filters" role="group" aria-label="Filtrer par pôle">
+  <div class="filters" role="group" aria-label="Filtrer par pôle" hidden={!!preset}>
     <button type="button" class="filter-btn is-active" data-filter="">Toutes</button>
     {FILTERS.map((f) => (
       <button type="button" class="filter-btn" data-filter={f.toLowerCase()}>{f}</button>
@@ -80,7 +95,11 @@ const members = ((data?.stories ?? []) as any[])
     ))}
   </div>
   {members.length === 0 && (
-    <p class="section-intro">L'équipe arrive bientôt.</p>
+    <p class="section-intro">
+      {preset
+        ? `Aucune professionnelle dans le pôle ${preset} pour le moment.`
+        : "L'équipe arrive bientôt."}
+    </p>
   )}
 </section>
 
@@ -107,6 +126,11 @@ const members = ((data?.stories ?? []) as any[])
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
+  }
+
+  /* A pole preset hides the whole row (author display beats [hidden]). */
+  .filters[hidden] {
+    display: none;
   }
 
   .filter-btn {
