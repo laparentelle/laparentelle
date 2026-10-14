@@ -11,6 +11,7 @@ const {
   variant = "primary",
   small = false,
   submit = false,
+  ...rest
 } = Astro.props;
 
 // Rendered on both faces of the flip; render once, inject twice.
@@ -30,7 +31,7 @@ const isExternal = /^https?:\/\//i.test(href);
 ---
 
 {submit ? (
-  <button type="submit" data-button-027="" class={cls}>
+  <button type="submit" data-button-027="" class={cls} {...rest}>
     <span class="button-027__inner">
       <span class="button-027__default">
         <span class="button-027__default-bg"></span>
@@ -47,7 +48,7 @@ const isExternal = /^https?:\/\//i.test(href);
     </span>
   </button>
 ) : (
-  <a data-button-027="" href={href} class={cls} target={isExternal ? "_blank" : undefined} rel={isExternal ? "noopener" : undefined}>
+  <a data-button-027="" href={href} class={cls} target={isExternal ? "_blank" : undefined} rel={isExternal ? "noopener" : undefined} {...rest}>
     <span class="button-027__inner">
       <span class="button-027__default">
         <span class="button-027__default-bg"></span>

@@ -14,10 +14,13 @@ import Button from "../Button.astro";
 import ContactForm from "../ContactForm.astro";
 import SbImage from "../SbImage.astro";
 import {
+  fetchPractitioners,
   fetchSessionsByPerson,
   sessionDayKey,
   sessionTiming,
 } from "../../lib/sessions";
+import { countBookingsBulk, isBookingsConfigured } from "../../lib/bookings";
+import { buildBookOpener } from "../../lib/bookDialog";
 
 interface Props {
   blok: {
@@ -87,12 +90,52 @@ const websiteHref =
     : null;
 
 // Lightweight planning: her next sessions (nothing rendered when empty).
+// Each row opens the shared booking dialog directly, like the planning;
+// without booking backend (or when full) it falls back to a planning link.
 const upcoming = await fetchSessionsByPerson(personUuid);
+const bookingsOn = isBookingsConfigured();
+const peopleByUuid = new Map<string, { name: string; url?: string; bookingUrl?: string }>();
+try {
+  const uuids = upcoming.flatMap((s) => s.people ?? []);
+  for (const [uuid, p] of await fetchPractitioners(uuids)) {
+    peopleByUuid.set(uuid, { name: p.name, url: p.url, bookingUrl: p.bookingUrl });
+  }
+} catch {
+  /* practitioner links are a nice-to-have here */
+}
+let personCounts: Record<string, number> = {};
+if (bookingsOn && upcoming.length) {
+  try {
+    personCounts = await countBookingsBulk(upcoming.map((s) => s.uid));
+  } catch {
+    personCounts = {};
+  }
+}
 const upcomingSlots = upcoming.slice(0, 4).flatMap((s) => {
   const day = sessionDayKey(s.start);
   if (!day || !s.start) return [];
   const timing = sessionTiming(s.start, s.duration ?? 60);
-  return [{ title: s.title, timing, day }];
+  const left =
+    bookingsOn && s.capacity ? Math.max(0, s.capacity - (personCounts[s.uid] ?? 0)) : null;
+  const full = left === 0;
+  const people = (s.people ?? [])
+    .map((uuid) => peopleByUuid.get(uuid))
+    .filter((p): p is { name: string; url?: string; bookingUrl?: string } => Boolean(p))
+    .map((p) => ({ name: p.name, url: p.url ?? null, bookingUrl: p.bookingUrl ?? null }));
+  const opener =
+    bookingsOn && s.uid && (s.external_booking || !full)
+      ? buildBookOpener({
+          uid: s.uid,
+          title: s.title,
+          startISO: new Date(s.start).toISOString(),
+          capacity: s.capacity,
+          note: s.note,
+          external: s.external_booking,
+          people,
+          label: timing.range ? `${timing.date}, ${timing.range}` : (timing.date ?? s.title),
+        })
+      : null;
+  return [{ title: s.title, timing, day, full, external: s.external_booking, opener }];
 });
 ---
 
@@ -131,7 +174,19 @@ const upcomingSlots = upcoming.slice(0, 4).flatMap((s) => {
               {s.timing.range && <span> · {s.timing.range}</span>}
               <span class="slot-title"> — {s.title}</span>
             </div>
-            <a class="slot-link" href={`/programme-du-mois?date=${s.day}`}>Réserver</a>
+            {s.opener ? (
+              <button
+                type="button"
+                class="slot-link slot-btn"
+                onclick={s.opener}
+              >
+                {s.external ? "Comment réserver ?" : "Réserver"}
+              </button>
+            ) : s.full ? (
+              <span class="slot-full">Complet</span>
+            ) : (
+              <a class="slot-link" href={`/programme-du-mois?date=${s.day}`}>Réserver</a>
+            )}
           </li>
         ))}
       </ul>
@@ -290,6 +345,22 @@ const upcomingSlots = upcoming.slice(0, 4).flatMap((s) => {
 
   .slot-link:hover {
     text-decoration: underline;
+  }
+
+  /* Dialog opener disguised as the text link above. */
+  .slot-btn {
+    font: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .slot-full {
+    color: var(--muted);
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
   .person-block .richtext {
