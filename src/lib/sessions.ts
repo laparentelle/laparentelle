@@ -248,6 +248,36 @@ export async function fetchSessionsByPerson(
   return out.sort((a, b) => (a.start as string).localeCompare(b.start as string));
 }
 
+export interface ActivityPageRef {
+  uuid: string;
+  title: string;
+  url: string;
+  tags: string[];
+}
+
+/** Resolve `activity_page` story UUIDs to their title / URL / tags. */
+export async function fetchActivityPages(uuids: string[]): Promise<ActivityPageRef[]> {
+  const unique = [...new Set(uuids.filter(Boolean))];
+  if (!unique.length) return [];
+  const data = await cdnGet<{ stories: Record<string, any>[] }>("stories", {
+    by_uuids: unique.join(","),
+    per_page: "100",
+    excluding_fields: "description,schedule,price,email,phone",
+  });
+  const out: ActivityPageRef[] = [];
+  for (const story of data?.stories ?? []) {
+    if ((story.content as Record<string, unknown> | undefined)?.component !== "activity_page")
+      continue;
+    out.push({
+      uuid: story.uuid as string,
+      title: (story.content?.title as string) ?? (story.name as string) ?? "",
+      url: resolveLink({ cached_url: story.full_slug as string }),
+      tags: (story.tag_list ?? []) as string[],
+    });
+  }
+  return out.sort((a, b) => a.title.localeCompare(b.title, "fr"));
+}
+
 /** Resolve person UUIDs to their name / email / public page. */
 export async function fetchPractitioners(
   uuids: string[],

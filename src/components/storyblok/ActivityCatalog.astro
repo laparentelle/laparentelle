@@ -48,7 +48,7 @@ const items = ((data?.stories ?? []) as any[])
     uuid: s.uuid as string,
     title: s.content?.title ?? s.name,
     animator: s.content?.animator ?? "",
-    photo: s.content?.photo ?? "",
+    photo: s.content?.image ?? "",
     tags: (s.tag_list ?? []) as string[],
     url: resolveLink({ cached_url: s.full_slug }),
   }))

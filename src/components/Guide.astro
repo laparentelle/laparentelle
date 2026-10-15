@@ -737,9 +737,17 @@ const SECTIONS = [
 
     <p>
       La fiche affiche aussi, juste sous le nom, <strong>ses prochains
-      créneaux</strong> (issus du planning, avec un lien <em>Réserver</em>)&nbsp;:
+      créneaux</strong> (issus du planning, avec un bouton <em>Réserver</em> qui
+      ouvre directement la réservation)&nbsp;:
       c’est automatique, il n’y a rien à saisir. Sans séance à venir, cette
       partie n’apparaît tout simplement pas.
+    </p>
+    <p>
+      Sous <em>Prestations</em>, la fiche liste aussi <strong>ses
+      ateliers</strong> (les pages d’activité de ses séances, avec lien)&nbsp;:
+      là encore, c’est déduit des séances rattachées à la personne — pour
+      qu’un atelier y figure, il faut rattacher la personne à au moins une
+      séance de cet atelier.
     </p>
 
     <h3>Intervenant invité, sans page</h3>
@@ -809,7 +817,7 @@ const SECTIONS = [
             "Les étiquettes de l’activité, qui la font apparaître dans le catalogue et ses filtres.",
             "Les <strong>horaires</strong> et les <strong>tarifs</strong>&nbsp;: deux champs de texte libre, à saisir à la main.",
             "Les <strong>prochains créneaux</strong>&nbsp;: ils ne sont pas saisis ici, ils sont calculés à partir des séances rattachées.",
-            "Le lien <em>Réserver</em>&nbsp;: il ouvre le planning au bon jour.",
+            "Le bouton <em>Réserver</em>&nbsp;: il ouvre directement la fenêtre de réservation de ce créneau.",
           ].map((t, i) => (
             <li>
               <span class="mark">{i + 1}</span>
@@ -838,6 +846,16 @@ const SECTIONS = [
           <td><strong>Titre</strong></td>
           <td>Le nom de l’activité</td>
           <td>Le titre de la page et de la carte du catalogue</td>
+        </tr>
+        <tr>
+          <td><strong>Titre SEO</strong></td>
+          <td>Un titre sur mesure pour Google (optionnel)</td>
+          <td>Vide = le titre de l’activité + le nom du site</td>
+        </tr>
+        <tr>
+          <td><strong>Description SEO</strong></td>
+          <td>Le texte sous le titre dans Google (optionnel)</td>
+          <td>Vide = la description générale du site</td>
         </tr>
         <tr>
           <td><strong>Image</strong></td>
@@ -994,8 +1012,8 @@ const SECTIONS = [
           fonctionnement attendu.
         </li>
         <li>
-          Le bouton <em>S’inscrire</em> ouvre le planning déjà positionné sur le
-          bon jour.
+          Le bouton <em>S’inscrire</em> ouvre directement la fenêtre de
+          réservation de la séance.
         </li>
         <li class="row-important">
           <strong>Le contenu de l’accueil est calculé lors de la
