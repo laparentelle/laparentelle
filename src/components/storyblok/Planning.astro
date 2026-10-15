@@ -432,7 +432,7 @@ const bookJs = (s: (typeof sessions)[number], label: string) =>
                             small
                             variant="contrast"
                             href="#"
-                            onclick={bookJs(s, `${d.label} à ${s.time}`)}
+                            onclick={bookJs(s, `${d.label} à ${s.time}`) + ";return false"}
                           >
                             {s.external ? "Comment réserver ?" : "Réserver"}
                           </Button>

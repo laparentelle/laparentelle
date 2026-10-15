@@ -11,6 +11,7 @@ import {
   formatDuration,
 } from "../../lib/sessions";
 import { countBookingsBulk, isBookingsConfigured } from "../../lib/bookings";
+import { buildBookOpener } from "../../lib/bookDialog";
 
 interface Props {
   blok: {
@@ -53,21 +54,40 @@ if (session && bookingsOn && !session.external_booking && session.capacity) {
 }
 const full = session ? !session.external_booking && left === 0 : false;
 
-// Practitioner names of the session.
+// Practitioners of the session (names for the card, links for the dialog).
 let practitionerNames = "";
+let openerPeople: { name: string; url: string | null; bookingUrl: string | null }[] = [];
 if (session) {
   try {
     const map = await fetchPractitioners(session.people ?? []);
-    practitionerNames = (session.people ?? [])
-      .map((uuid) => map.get(uuid)?.name)
-      .filter(Boolean)
-      .join(", ");
+    const entries = (session.people ?? [])
+      .map((uuid) => map.get(uuid))
+      .filter((p): p is NonNullable<typeof p> => Boolean(p));
+    practitionerNames = entries.map((p) => p.name).filter(Boolean).join(", ");
+    openerPeople = entries
+      .filter((p) => p.name)
+      .map((p) => ({ name: p.name, url: p.url ?? null, bookingUrl: p.bookingUrl ?? null }));
   } catch {
     /* practitioner names are a nice-to-have here */
   }
 }
 
 const timing = session ? sessionTiming(session.start, session.duration ?? 60) : undefined;
+// The card button opens the booking dialog directly; without booking
+// backend it falls back to the planning deep link, as before.
+const opener =
+  session && bookingsOn && (session.external_booking || !full) && session.start
+    ? buildBookOpener({
+        uid: session.uid,
+        title: session.title,
+        startISO: new Date(session.start).toISOString(),
+        capacity: session.capacity,
+        note: session.note,
+        external: session.external_booking,
+        people: openerPeople,
+        label: timing?.range ? `${timing.date}, ${timing.range}` : (timing?.date ?? session.title),
+      })
+    : null;
 const planningHref =
   session && session.start ? `/programme-du-mois?date=${sessionDayKey(session.start) ?? ""}` : "/programme-du-mois";
 ---
@@ -93,6 +113,10 @@ const planningHref =
         {blok.price && <p class="activity-price">{blok.price}</p>}
         {bookingsOn && full ? (
           <span class="activity-full">Complet</span>
+        ) : opener ? (
+          <Button small variant="contrast" href="#" onclick={opener + ";return false"}>
+            {blok.booking_label || "Réserver"}
+          </Button>
         ) : (
           <Button small variant="contrast" href={planningHref}>
             {blok.booking_label || "Réserver"}
