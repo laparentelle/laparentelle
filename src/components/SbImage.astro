@@ -88,8 +88,11 @@ const focusAttrs = focus
 
 <script>
   const place = (img: HTMLImageElement) => {
-    const fx = Number(img.getAttribute("data-focus-x")) / 100;
-    const fy = Number(img.getAttribute("data-focus-y")) / 100;
+    const rawX = img.getAttribute("data-focus-x");
+    const rawY = img.getAttribute("data-focus-y");
+    if (rawX === null || rawY === null) return;
+    const fx = Number(rawX) / 100;
+    const fy = Number(rawY) / 100;
     if (!Number.isFinite(fx) || !Number.isFinite(fy)) return;
     const iw = img.naturalWidth;
     const ih = img.naturalHeight;
