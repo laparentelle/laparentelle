@@ -31,6 +31,20 @@ const { blok } = Astro.props;
 const bookingsOn = isBookingsConfigured();
 const tz = "Europe/Paris";
 
+// Grid geometry must use Paris wall-clock time, not the server's timezone
+// (Vercel runs in UTC → every slot was shifted by 1–2h).
+const parisHM = new Intl.DateTimeFormat("en-GB", {
+  timeZone: tz,
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+const minutesOfDay = (d: Date) => {
+  const [h, m] = parisHM.format(d).split(":").map(Number);
+  return h * 60 + m;
+};
+const DAY_MINUTES = 24 * 60;
+
 // Session taxonomy (values mirror the Storyblok `type` options)
 const TYPES = [
   { value: "activite", label: "Activité", legend: "Activité collective" },
@@ -40,6 +54,9 @@ const TYPES = [
 ] as const;
 const typeOf = (v?: string) =>
   TYPES.some((t) => t.value === v) ? (v as string) : "activite";
+// "Consultations" stays a real session type (badge, colour, legend) but is
+// no longer offered as a filter chip.
+const FILTER_TYPES = TYPES.filter((t) => t.value !== "consultation");
 
 const dayFmt = new Intl.DateTimeFormat("fr-FR", {
   weekday: "long",
@@ -84,11 +101,15 @@ const sessions = (await fetchPlanningSessions())
     const start = parseSessionDate(s.start);
     if (!start) return null;
     const minutes = toMinutes(s.duration);
+    const startMin = minutesOfDay(start);
+    // A slot never extends past midnight on the grid: overnight sessions are
+    // clipped instead of stretching the axis to "26 h".
     return {
       ...s,
       date: start,
-      startMin: start.getHours() * 60 + start.getMinutes(),
-      endMin: start.getHours() * 60 + start.getMinutes() + minutes,
+      startMin,
+      endMin: Math.min(startMin + minutes, DAY_MINUTES),
+      visibleMinutes: Math.min(minutes, DAY_MINUTES - startMin),
       minutes,
       time: timeFmt.format(start),
       type: typeOf(s.type),
@@ -223,7 +244,10 @@ const gridStart = Math.max(
   0,
   Math.floor(Math.min(...sessions.map((s) => s.startMin)) / 60) * 60,
 );
-const gridEnd = Math.ceil(Math.max(...sessions.map((s) => s.endMin)) / 60) * 60;
+const gridEnd = Math.min(
+  DAY_MINUTES,
+  Math.ceil(Math.max(...sessions.map((s) => s.endMin)) / 60) * 60,
+);
 const hours = Array.from(
   { length: (gridEnd - gridStart) / 60 + 1 },
   (_, i) => gridStart + i * 60,
@@ -283,7 +307,7 @@ const bookJs = (s: (typeof sessions)[number], label: string) =>
   <div class="planning-toolbar">
     <div class="filters" role="group" aria-label="Filtrer par type">
       <button type="button" class="filter-btn is-active" data-type="">Tout</button>
-      {TYPES.map((t) => (
+      {FILTER_TYPES.map((t) => (
         <button type="button" class="filter-btn" data-type={t.value}>{t.label}</button>
       ))}
     </div>
@@ -338,7 +362,7 @@ const bookJs = (s: (typeof sessions)[number], label: string) =>
               const left = remaining(s);
               const full = left === 0;
               const top = ((s.startMin - gridStart) / 60) * 4;
-              const height = Math.max(2.4, (s.minutes / 60) * 4);
+              const height = Math.max(2.4, (s.visibleMinutes / 60) * 4);
               const width = 100 / s.lanes;
               const compact = s.minutes < 75;
               const tiny = s.minutes < 45;
