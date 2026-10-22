@@ -36,6 +36,22 @@ export function imgAlt(
   return image.alt ?? fallback;
 }
 
+/**
+ * Normalise site-relative URLs inside rendered rich text: no trailing slash
+ * (project convention). Storyblok routinely emits `/equipe/` for folder-index
+ * pages, and `renderRichText` returns anchors verbatim.
+ */
+export function normaliseInternalHrefs(html: string): string {
+  return html.replace(/(href|src)="([^"]*)"/g, (match, attr: string, value: string) => {
+    if (!value.startsWith("/") || value.startsWith("//")) return match;
+    const cut = value.search(/[?#]/);
+    const head = cut === -1 ? value : value.slice(0, cut);
+    const tail = cut === -1 ? "" : value.slice(cut);
+    const clean = head.replace(/\/{2,}/g, "/").replace(/\/+$/, "") || "/";
+    return `${attr}="${clean}${tail}"`;
+  });
+}
+
 /** Split a "one per line" textarea field into a clean string array. */
 export function lines(value?: string | null): string[] {
   if (!value) return [];

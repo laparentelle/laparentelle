@@ -1,6 +1,7 @@
 ---
-import { storyblokEditable, renderRichText } from "@storyblok/astro";
+import { storyblokEditable } from "@storyblok/astro";
 import { lines } from "../../lib/links";
+import { richText } from "../../lib/richtext";
 
 interface Props {
   blok: {
@@ -12,7 +13,7 @@ interface Props {
 }
 
 const { blok } = Astro.props;
-const html = blok.text ? renderRichText(blok.text) : "";
+const html = blok.text ? richText(blok.text) : "";
 const tags = lines(blok.tags);
 ---
 

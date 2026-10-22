@@ -1,6 +1,7 @@
 ---
-import { storyblokEditable, renderRichText } from "@storyblok/astro";
+import { storyblokEditable } from "@storyblok/astro";
 import { imgSrc, imgAlt, resolveLink } from "../../lib/links";
+import { richText } from "../../lib/richtext";
 import { adminEmail } from "../../lib/contacts";
 import { getGlobalStory } from "../../lib/storyblok";
 import {
@@ -76,9 +77,9 @@ const personNode =
         knowsAbout: tags.length > 0 ? tags : undefined,
       })
     : null;
-const bio = blok.bio ? renderRichText(blok.bio) : "";
-const prestations = blok.prestations ? renderRichText(blok.prestations) : "";
-const tarifs = blok.tarifs ? renderRichText(blok.tarifs) : "";
+const bio = blok.bio ? richText(blok.bio) : "";
+const prestations = blok.prestations ? richText(blok.prestations) : "";
+const tarifs = blok.tarifs ? richText(blok.tarifs) : "";
 const src = imgSrc(blok.photo);
 const bookingHref =
   blok.booking_link?.cached_url || blok.booking_link?.url

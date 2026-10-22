@@ -33,6 +33,37 @@ export function normalisePath(pathname: string): string {
   return single.replace(/\/+$/, "");
 }
 
+/** True when `hostname` is this site (configured host, with or without www). */
+function isSiteHost(hostname: string, origin: string): boolean {
+  let host = "";
+  try {
+    host = new URL(origin).hostname;
+  } catch {
+    return false;
+  }
+  if (!host) return false;
+  const bare = host.replace(/^www\./, "");
+  return hostname === host || hostname === bare || hostname === "www." + bare;
+}
+
+/**
+ * Rewrite an absolute URL on this site's own hosts (apex ↔ www) to the
+ * canonical origin, without trailing slash. Returns null for other hosts.
+ */
+export function normaliseSiteAbsoluteUrl(
+  value: string,
+  origin: string,
+): string | null {
+  let u: URL;
+  try {
+    u = new URL(value, origin);
+  } catch {
+    return null;
+  }
+  if (!isSiteHost(u.hostname, origin)) return null;
+  return origin + normalisePath(u.pathname) + u.search + u.hash;
+}
+
 /**
  * Convention: page URLs never end with a trailing slash (the homepage `/`
  * is the only exception). Site-relative `path` is normalised to that form;
@@ -41,6 +72,9 @@ export function normalisePath(pathname: string): string {
  */
 export function absoluteUrl(origin: string, path: string | null | undefined): string {
   if (!path) return origin;
+  // Storyblok asset URLs are protocol-relative; social/JSON-LD consumers
+  // require a scheme.
+  if (path.slice(0, 2) === "//") return "https:" + path;
   if (/^(https?:)?\/\//i.test(path)) return path;
   if (path.charAt(0) === "#") return path;
   if (/^[a-z][a-z0-9+.-]*:/i.test(path)) return path;
@@ -125,6 +159,32 @@ export function parseManualSchema(value: unknown): SchemaNode[] {
     return [parsed];
   }
   return [];
+}
+
+/**
+ * Normalise every URL-like string inside a schema graph: same-site absolute
+ * URLs (apex or www) are rewritten to the canonical origin and lose their
+ * trailing slash. External URLs (`schema.org`, social profiles…) untouched.
+ */
+export function normaliseSchemaUrls(
+  nodes: SchemaNode[],
+  origin: string,
+): SchemaNode[] {
+  const walk = (value: unknown): unknown => {
+    if (typeof value === "string") {
+      return /^https?:\/\//i.test(value)
+        ? normaliseSiteAbsoluteUrl(value, origin) ?? value
+        : value;
+    }
+    if (Array.isArray(value)) return value.map(walk);
+    if (isRecord(value)) {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(value)) out[k] = walk(v);
+      return out;
+    }
+    return value;
+  };
+  return nodes.map((n) => walk(n) as SchemaNode);
 }
 
 /* ------------------------------------------------------------- builders -- */

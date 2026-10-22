@@ -1,6 +1,7 @@
 ---
-import { storyblokEditable, renderRichText } from "@storyblok/astro";
+import { storyblokEditable } from "@storyblok/astro";
 import { imgSrc, imgAlt, resolveLink } from "../../lib/links";
+import { richText } from "../../lib/richtext";
 import Button from "../Button.astro";
 import SbImage from "../SbImage.astro";
 import {
@@ -39,7 +40,7 @@ interface Props {
 }
 
 const { blok, tags = [], activityUuid = "" } = Astro.props;
-const description = blok.description ? renderRichText(blok.description) : "";
+const description = blok.description ? richText(blok.description) : "";
 const src = imgSrc(blok.image);
 const bookingHref =
   blok.booking_link?.cached_url || blok.booking_link?.url

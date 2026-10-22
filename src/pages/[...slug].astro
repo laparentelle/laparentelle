@@ -12,6 +12,8 @@ export const prerender = false;
 
 const slug = Astro.params.slug;
 if (!slug) return Astro.redirect("/");
+// The homepage story is served at `/`; `/home` would be a duplicate URL.
+if (slug === "home") return Astro.redirect("/", 301);
 let story: any = null;
 try {
   story = await getPageStory(slug);

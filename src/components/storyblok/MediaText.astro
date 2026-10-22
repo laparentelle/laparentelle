@@ -1,6 +1,7 @@
 ---
-import { storyblokEditable, renderRichText } from "@storyblok/astro";
+import { storyblokEditable } from "@storyblok/astro";
 import { resolveLink, imgSrc, imgAlt } from "../../lib/links";
+import { richText } from "../../lib/richtext";
 import SbImage from "../SbImage.astro";
 import Button from "../Button.astro";
 
@@ -17,7 +18,7 @@ interface Props {
 }
 
 const { blok } = Astro.props;
-const html = blok.text ? renderRichText(blok.text) : "";
+const html = blok.text ? richText(blok.text) : "";
 const src = imgSrc(blok.image);
 ---
 

@@ -17,6 +17,8 @@ import {
   geoFrom,
   jsonLd,
   normalisePath,
+  normaliseSchemaUrls,
+  normaliseSiteAbsoluteUrl,
   organizationSchema,
   parseManualSchema,
   robotsContent,
@@ -135,14 +137,8 @@ const robotsFinal = previewEnv ? "noindex, nofollow" : robots;
 const canonicalFor = (override: string) => {
   const t = override.trim();
   if (/^(https?:)?\/\//i.test(t)) {
-    try {
-      const u = new URL(t, origin);
-      if (u.origin === origin)
-        return u.origin + normalisePath(u.pathname) + u.search + u.hash;
-    } catch {
-      /* fall through to the raw value */
-    }
-    return t;
+    // Same site (apex or www): force the configured origin, no trailing slash.
+    return normaliseSiteAbsoluteUrl(t, origin) ?? t;
   }
   return absoluteUrl(origin, t);
 };
@@ -173,6 +169,8 @@ const graph: SchemaNode[] = [
 ].concat(extraSchema, parseManualSchema(globalContent.schema_manual));
 const crumbs = breadcrumbSchema(origin, breadcrumbs);
 if (crumbs) graph.push(crumbs);
+// Editor JSON-LD is free text: align its URLs with the canonical host.
+const graphNormalised = normaliseSchemaUrls(graph, origin);
 
 const menuItems = (
   Array.isArray(globalContent.menu_items) && globalContent.menu_items.length
@@ -277,7 +275,7 @@ const colorVars = (
     <link rel="preload" as="font" type="font/woff2" crossorigin href={jost600} />
     <script
       type="application/ld+json"
-      set:html={jsonLd({ "@context": "https://schema.org", "@graph": graph })}
+      set:html={jsonLd({ "@context": "https://schema.org", "@graph": graphNormalised })}
     />
   </head>
   <body>

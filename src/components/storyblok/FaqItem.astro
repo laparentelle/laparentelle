@@ -1,5 +1,6 @@
 ---
-import { storyblokEditable, renderRichText } from "@storyblok/astro";
+import { storyblokEditable } from "@storyblok/astro";
+import { richText } from "../../lib/richtext";
 
 interface Props {
   blok: {
@@ -9,7 +10,7 @@ interface Props {
 }
 
 const { blok } = Astro.props;
-const html = blok.answer ? renderRichText(blok.answer) : "";
+const html = blok.answer ? richText(blok.answer) : "";
 ---
 
 <details class="faq-item" {...storyblokEditable(blok)}>
