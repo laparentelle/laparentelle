@@ -7,9 +7,12 @@
  *   in preview), with width/height inferred for layout stability.
  * - Imported local assets (ImageMetadata) get the same treatment.
  * - Plain site-relative paths (public/) render as a classic <img>.
+ * - A Storyblok focal point is applied as `object-position` so CSS crops
+ *   keep the editor's chosen subject centred.
  */
 import { Image } from "astro:assets";
 import type { ImageMetadata } from "astro";
+import { getAssetFocus } from "../lib/assetFocus";
 
 interface Props {
   src: string | ImageMetadata;
@@ -32,6 +35,17 @@ const {
 } = Astro.props;
 
 const isRemote = typeof src === "string" && src.indexOf("http") === 0;
+
+// Storyblok focal point. The inline style is a no-JS approximation (the
+// point keeps its relative position); the script below refines it into an
+// exact centring once the rendered box size is known.
+const focus = typeof src === "string" ? await getAssetFocus(src) : null;
+const imageStyle = focus
+  ? `object-position:${focus.x}% ${focus.y}%`
+  : undefined;
+const focusAttrs = focus
+  ? { "data-focus-x": focus.x, "data-focus-y": focus.y }
+  : {};
 ---
 
 {
@@ -44,6 +58,8 @@ const isRemote = typeof src === "string" && src.indexOf("http") === 0;
       loading={loading}
       fetchpriority={fetchpriority}
       class={cls}
+      style={imageStyle}
+      {...focusAttrs}
       inferSize
     />
   ) : typeof src === "string" ? (
@@ -53,6 +69,8 @@ const isRemote = typeof src === "string" && src.indexOf("http") === 0;
       loading={loading}
       fetchpriority={fetchpriority}
       class={cls}
+      style={imageStyle}
+      {...focusAttrs}
     />
   ) : (
     <Image
@@ -63,6 +81,46 @@ const isRemote = typeof src === "string" && src.indexOf("http") === 0;
       loading={loading}
       fetchpriority={fetchpriority}
       class={cls}
+      style={imageStyle}
     />
   )
 }
+
+<script>
+  const place = (img: HTMLImageElement) => {
+    const fx = Number(img.getAttribute("data-focus-x")) / 100;
+    const fy = Number(img.getAttribute("data-focus-y")) / 100;
+    if (!Number.isFinite(fx) || !Number.isFinite(fy)) return;
+    const iw = img.naturalWidth;
+    const ih = img.naturalHeight;
+    const bw = img.clientWidth;
+    const bh = img.clientHeight;
+    if (!iw || !ih || !bw || !bh) return;
+    // Scale factors of the object-fit: cover rendering, per axis. When a
+    // factor is 1 the axis is not cropped and centring means 50%.
+    const kx = (bh * iw) / ih / bw;
+    const ky = (bw * ih) / iw / bh;
+    const pos = (f: number, k: number) =>
+      k > 1 ? ((0.5 - f * k) / (1 - k)) * 100 : 50;
+    img.style.objectPosition = `${pos(fx, kx).toFixed(1)}% ${pos(fy, ky).toFixed(1)}%`;
+  };
+
+  const placeAll = () =>
+    document.querySelectorAll<HTMLImageElement>("img[data-focus-x]").forEach(place);
+
+  placeAll();
+  // Images not decoded yet when this module runs.
+  document.addEventListener(
+    "load",
+    (event) => {
+      if (event.target instanceof HTMLImageElement) place(event.target);
+    },
+    true,
+  );
+
+  let resizeTimer: ReturnType<typeof setTimeout>;
+  addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(placeAll, 150);
+  });
+</script>
